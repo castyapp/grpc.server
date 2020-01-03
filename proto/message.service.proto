@@ -22,7 +22,14 @@ message CreateMessageRequest {
     proto.AuthenticateRequest auth_request = 3;
 }
 
+message CreateMessageResponse {
+    int64    code    = 1;
+    string   status  = 2;
+    string   message = 4;
+    messages.Message result  = 3;
+}
+
 service MessagesService {
     rpc GetUserMessages(GetMessagesRequest) returns (GetMessagesResponse);
-    rpc CreateMessage(CreateMessageRequest) returns (Response);
+    rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse);
 }

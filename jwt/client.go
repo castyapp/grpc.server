@@ -162,6 +162,11 @@ func RefreshToken(refreshTokenString string) (token, refreshedToken string, err 
 		return verifyKey, nil
 	})
 
+	if refreshToken == nil {
+		err = errors.New("error reading jwt claims")
+		return
+	}
+
 	refreshTokenClaims, ok := refreshToken.Claims.(*jwt.StandardClaims)
 	if !ok {
 		err = errors.New("error reading jwt claims")

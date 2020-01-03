@@ -21,7 +21,6 @@ func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*
 
 	var (
 		dbSender   = new(models.User)
-		dbReciever = new(models.User)
 		collection = db.Connection.Collection("users")
 	)
 
@@ -29,16 +28,7 @@ func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*
 		return nil, err
 	}
 
-	if err := collection.FindOne(ctx, bson.M{ "_id": message.ReceiverId }).Decode(dbReciever); err != nil {
-		return nil, err
-	}
-
 	sender, err := user.SetDBUserToProtoUser(dbSender)
-	if err != nil {
-		return nil, err
-	}
-
-	reciever, err := user.SetDBUserToProtoUser(dbReciever)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +40,6 @@ func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*
 		Id:       message.ID.Hex(),
 		Content:  message.Content,
 		Sender:   sender,
-		Reciever: reciever,
 		Edited:   message.Edited,
 		Deleted:  message.Deleted,
 		CreatedAt: createdAt,

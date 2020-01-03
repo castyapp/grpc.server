@@ -3,7 +3,7 @@ version: '3'
 services:
 
   grpc:
-    build: .
+    build: ./grpc.server
     container_name: movienight.grpc
     ports:
       - 55283:55283
