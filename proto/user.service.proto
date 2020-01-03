@@ -1,0 +1,67 @@
+syntax = "proto3";
+package proto;
+
+import "base.proto";
+import "auth.service.proto";
+import "messages/user.proto";
+
+message UpdateStateRequest {
+    messages.PERSONAL_STATE state    = 1;
+    AuthenticateRequest auth_request = 2;
+}
+
+message FriendRequest {
+    string              friend_id    = 1;
+    AuthenticateRequest auth_request = 2;
+}
+
+message CreateUserRequest {
+    messages.User user = 1;
+}
+
+message GetFriendRequest {
+    messages.User user = 1;
+}
+
+message GetUserResponse {
+    int64    code        = 1;
+    string   status      = 2;
+    string   message     = 3;
+    messages.User result = 4;
+}
+
+message FriendsResponse {
+    int64    code    = 1;
+    string   status  = 2;
+    string   message = 3;
+    repeated messages.User result = 4;
+}
+
+message FriendResponse {
+    int64         code    = 1;
+    string        status  = 2;
+    string        message = 3;
+    messages.User result  = 4;
+}
+
+message SearchUserRequest {
+    string keyword = 1;
+    AuthenticateRequest auth_request = 2;
+}
+
+message SearchUserResponse {
+    int64         code    = 1;
+    string        status  = 2;
+    string        message = 3;
+    repeated messages.User result  = 4;
+}
+
+service UserService {
+    rpc CreateUser(CreateUserRequest) returns (AuthResponse);
+    rpc UpdateState(UpdateStateRequest) returns (Response);
+    rpc GetUser(AuthenticateRequest) returns (GetUserResponse);
+    rpc GetFriend(FriendRequest) returns (FriendResponse);
+    rpc SendFriendRequest(FriendRequest) returns (Response);
+    rpc GetFriends(AuthenticateRequest) returns (FriendsResponse);
+    rpc Search(SearchUserRequest) returns (SearchUserResponse);
+}

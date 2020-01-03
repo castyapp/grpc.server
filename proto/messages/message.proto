@@ -1,0 +1,17 @@
+syntax = "proto3";
+package messages;
+
+import "google/protobuf/timestamp.proto";
+import "user.proto";
+
+message Message {
+    string  id          = 1;
+    string  content     = 2;
+    User    sender      = 3;
+    User    reciever    = 4;
+    bool    edited      = 5;
+    bool    deleted     = 6;
+    google.protobuf.Timestamp  created_at  = 7;
+    google.protobuf.Timestamp  updated_at  = 8;
+    google.protobuf.Timestamp  deleted_at  = 9;
+}

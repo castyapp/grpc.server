@@ -1,0 +1,28 @@
+syntax = "proto3";
+package proto;
+
+import "base.proto";
+import "messages/message.proto";
+
+message GetMessagesRequest {
+    string receiver_id = 1;
+    proto.AuthenticateRequest auth_request = 2;
+}
+
+message GetMessagesResponse {
+    int64    code    = 1;
+    string   status  = 2;
+    string   message = 4;
+    repeated messages.Message result  = 3;
+}
+
+message CreateMessageRequest {
+    string reciever_id = 1;
+    string content     = 2;
+    proto.AuthenticateRequest auth_request = 3;
+}
+
+service MessagesService {
+    rpc GetUserMessages(GetMessagesRequest) returns (GetMessagesResponse);
+    rpc CreateMessage(CreateMessageRequest) returns (Response);
+}

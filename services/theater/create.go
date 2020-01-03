@@ -1,0 +1,74 @@
+package theater
+
+import (
+	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"movie.night.gRPC.server/db"
+	"movie.night.gRPC.server/proto"
+	"movie.night.gRPC.server/services"
+	"movie.night.gRPC.server/services/auth"
+	"net/http"
+	"time"
+)
+
+func (s *Service) CreateTheater(ctx context.Context, req *proto.CreateTheaterRequest) (*proto.Response, error) {
+
+	var (
+		collection     = db.Connection.Collection("theaters")
+		failedResponse = &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusInternalServerError,
+			Message: "Could not create theater, Please try again later!",
+		}
+	)
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized!",
+		}, nil
+	}
+
+	if req.Theater == nil {
+		return &proto.Response{
+			Status:  "failed",
+			Code:    420,
+			Message: "Validation error, Theater entry not exists!",
+		}, nil
+	}
+
+	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
+
+	theater := bson.M{
+		"title":      req.Theater.Title,
+		"hash":       services.GenerateHash(),
+		"privacy":    int64(req.Theater.Privacy),
+		"user_id":    user.ID,
+		"created_at": time.Now(),
+		"updated_at": time.Now(),
+		"video_player_access": int64(req.Theater.VideoPlayerAccess),
+	}
+
+	if req.Theater.Movie != nil {
+		theater["movie"] = bson.M{
+			"movie_uri": req.Theater.Movie.MovieUri,
+			"poster":    req.Theater.Movie.Poster,
+			//"subtitles": map[string] interface{} {},
+			"size":      0,
+			"length":    0,
+			"last_played_time": 0,
+		}
+	}
+
+	if _, err := collection.InsertOne(mCtx, theater); err != nil {
+		return failedResponse, nil
+	}
+
+	return &proto.Response{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "Theater created successfully!",
+	}, nil
+}

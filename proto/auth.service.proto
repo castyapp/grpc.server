@@ -1,0 +1,31 @@
+syntax = "proto3";
+package proto;
+
+message AuthRequest {
+    string user = 1;
+    string pass = 2;
+}
+
+message ValidationError {
+    string field = 1;
+    repeated string errors = 2;
+}
+
+message AuthResponse {
+    int64   code    = 1;
+    string  status  = 2;
+    bytes   token   = 3;
+    string  type    = 4;
+    string  message = 5;
+    bytes   refreshed_token = 6;
+    repeated ValidationError validation_error = 7;
+}
+
+message RefreshTokenRequest {
+    bytes refreshed_token = 2;
+}
+
+service AuthService {
+    rpc Authenticate(AuthRequest) returns (AuthResponse);
+    rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
+}

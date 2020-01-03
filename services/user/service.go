@@ -1,0 +1,103 @@
+package user
+
+import (
+	"context"
+	"github.com/getsentry/sentry-go"
+	"github.com/golang/protobuf/ptypes"
+	"go.mongodb.org/mongo-driver/bson"
+	"movie.night.gRPC.server/db"
+	"movie.night.gRPC.server/db/models"
+	"movie.night.gRPC.server/proto"
+	"movie.night.gRPC.server/proto/messages"
+	"movie.night.gRPC.server/services/auth"
+	"net/http"
+	"time"
+)
+
+type Service struct {}
+
+func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
+
+	database := db.Connection
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized!",
+		}, nil
+	}
+
+	mdCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
+
+	var (
+		filter = bson.M{"_id": user.ID}
+		update = bson.M{
+			"$set": bson.M{
+				"state": int(req.State),
+			},
+		}
+	)
+
+	if _, err := database.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+		sentry.CaptureException(err)
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusInternalServerError,
+			Message: "The requested parameter is not updated!",
+		}, nil
+	}
+
+	return &proto.Response{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "The requested parameter is updated successfully!",
+	}, nil
+}
+
+func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
+
+	lastLogin, _ := ptypes.TimestampProto(user.LastLogin)
+	joinedAt,  _ := ptypes.TimestampProto(user.JoinedAt)
+	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
+
+	return &messages.User{
+		Id:        user.ID.Hex(),
+		Fullname:  user.Fullname,
+		Username:  user.Username,
+		Hash:      user.Hash,
+		Email:     user.Email,
+		IsActive:  user.IsActive,
+		Avatar:    user.Avatar,
+		Activity:  user.Activity,
+		State:     messages.PERSONAL_STATE(user.State),
+		LastLogin: lastLogin,
+		JoinedAt:  joinedAt,
+		UpdatedAt: updatedAt,
+	}, nil
+}
+
+func (s *Service) GetUser(ctx context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
+
+	user, err := auth.Authenticate(req)
+	if err != nil {
+		return nil, err
+	}
+
+	protoUser, err := SetDBUserToProtoUser(user)
+	if err != nil {
+		sentry.CaptureException(err)
+		return &proto.GetUserResponse{
+			Message: "Could not decode user!",
+			Status: "failed",
+			Code:   http.StatusInternalServerError,
+		}, nil
+	}
+
+	return &proto.GetUserResponse{
+		Result: protoUser,
+		Status: "success",
+		Code:   http.StatusOK,
+	}, nil
+}

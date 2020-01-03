@@ -1,0 +1,13 @@
+syntax = "proto3";
+package proto;
+
+message Response {
+    int64   code    = 1;
+    string  status  = 2;
+    bytes   result  = 3;
+    string  message = 4;
+}
+
+message AuthenticateRequest {
+    bytes token = 1;
+}

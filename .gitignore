@@ -1,0 +1,7 @@
+/.env
+/.idea
+/client
+/jwt/keys/*
+!/jwt/keys/.keep
+/data
+/.DS_Store

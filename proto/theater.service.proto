@@ -1,0 +1,61 @@
+wsyntax = "proto3";
+package proto;
+
+import "base.proto";
+import "messages/theater.proto";
+import "messages/user.proto";
+
+message GetAllUserTheatersRequest {
+    proto.AuthenticateRequest auth_request = 1;
+}
+
+message CreateTheaterRequest {
+    messages.Theater theater = 1;
+    proto.AuthenticateRequest auth_request = 2;
+}
+
+message GetTheaterRequest {
+    string theater_id = 1;
+    proto.AuthenticateRequest auth_request = 2;
+}
+
+message UserTheatersResponse {
+    int64    code    = 1;
+    string   status  = 2;
+    string   message = 3;
+    repeated messages.Theater result = 4;
+}
+
+message UserTheaterResponse {
+    int64    code    = 1;
+    string   status  = 2;
+    string   message = 3;
+    messages.Theater result = 4;
+}
+
+message TheaterMembersResponse {
+    int64    code    = 1;
+    string   status  = 2;
+    string   message = 3;
+    repeated messages.User result = 4;
+}
+
+message AddOrRemoveMemberRequest {
+    string member_id = 1;
+    string theater_id = 2;
+    proto.AuthenticateRequest auth_request = 3;
+}
+
+message GetTheaterMembersRequest {
+    string theater_id = 2;
+    proto.AuthenticateRequest auth_request = 3;
+}
+
+service TheaterService {
+    rpc GetUserTheaters(GetAllUserTheatersRequest) returns (UserTheatersResponse);
+    rpc GetUserTheater(GetTheaterRequest) returns (UserTheaterResponse);
+    rpc CreateTheater(CreateTheaterRequest) returns (Response);
+    rpc AddMember(AddOrRemoveMemberRequest) returns (Response);
+    rpc RemoveMember(AddOrRemoveMemberRequest) returns (Response);
+    rpc GetMembers(GetTheaterMembersRequest) returns (TheaterMembersResponse);
+}
