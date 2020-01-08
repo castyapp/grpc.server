@@ -70,7 +70,10 @@ func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
 		Email:     user.Email,
 		IsActive:  user.IsActive,
 		Avatar:    user.Avatar,
-		Activity:  user.Activity,
+		Activity:  &messages.Activity{
+			Id:       user.Activity.ID.Hex(),
+			Activity: user.Activity.Activity,
+		},
 		State:     messages.PERSONAL_STATE(user.State),
 		LastLogin: lastLogin,
 		JoinedAt:  joinedAt,

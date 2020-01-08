@@ -64,7 +64,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		"password":   models.HashPassword(user.Password),
 		"is_active":  true,
 		"state":      int(messages.PERSONAL_STATE_OFFLINE),
-		"activity":   0,
+		"activity":   bson.M{},
 		"avatar":     "default",
 		"last_login": time.Now(),
 		"joined_at":  time.Now(),

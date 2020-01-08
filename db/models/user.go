@@ -15,7 +15,7 @@ type User struct {
 	Password      string                `bson:"password, omitempty" json:"-, omitempty"`
 	IsActive      bool                  `bson:"is_active, omitempty" json:"is_active, omitempty"`
 	State         int                   `bson:"state, omitempty" json:"state, omitempty"`
-	Activity      int64                   `bson:"activity, omitempty" json:"activity, omitempty"`
+	Activity      Activity              `bson:"activity, omitempty" json:"activity, omitempty"`
 	Avatar        string                `bson:"avatar, omitempty" json:"avatar, omitempty"`
 	RoleId        uint                  `bson:"role_id, omitempty" json:"role_id, omitempty"`
 	LastLogin     time.Time             `bson:"last_login, omitempty" json:"last_login, omitempty"`

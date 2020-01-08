@@ -24,6 +24,4 @@ WORKDIR /code
 # build project
 RUN go build -o movie.night.gRPC.server .
 
-EXPOSE 55283
-
 CMD ["./movie.night.gRPC.server", "-port", "55283"]
