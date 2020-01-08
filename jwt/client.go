@@ -234,6 +234,11 @@ func DecodeAuthToken(token []byte) (user *models.User, err error) {
 		return verifyKey, nil
 	})
 
+	if authToken != nil || authToken.Claims == nil {
+		err = errors.New("error reading jwt claims")
+		return
+	}
+
 	authTokenClaims, ok := authToken.Claims.(*jwt.StandardClaims)
 	if !ok || err != nil {
 		err = errors.New("error reading jwt claims")
