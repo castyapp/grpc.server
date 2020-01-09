@@ -20,7 +20,9 @@ import (
 )
 
 var (
-	expireTimeInt int
+	expireTimeInt,
+	expireTimeRefreshedTokenInt int
+
 	verifyKey *rsa.PublicKey
 	signKey   *rsa.PrivateKey
 
@@ -55,8 +57,12 @@ func init() {
 		log.Fatal(err)
 	}
 
-	expireTimeString := os.Getenv("JWT_REFRESH_TOKEN_VALID_TIME")
-	expireTimeInt, err = strconv.Atoi(expireTimeString)
+	expireTimeRefreshedTokenInt, err = strconv.Atoi(os.Getenv("JWT_REFRESH_TOKEN_VALID_TIME"))
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+
+	expireTimeInt, err = strconv.Atoi(os.Getenv("JWT_EXPIRE_TIME"))
 	if err != nil {
 		sentry.CaptureException(err)
 	}
@@ -104,7 +110,7 @@ func createRefreshToken(userid string) (refreshTokenString string, err error) {
 		return
 	}
 
-	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeInt))
+	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeRefreshedTokenInt))
 
 	var result *mongo.InsertOneResult
 	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
