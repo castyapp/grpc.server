@@ -10,6 +10,11 @@ message UpdateStateRequest {
     AuthenticateRequest auth_request = 2;
 }
 
+message UpdateActivityRequest {
+    messages.Activity   activity     = 1;
+    AuthenticateRequest auth_request = 2;
+}
+
 message FriendRequest {
     string              friend_id    = 1;
     AuthenticateRequest auth_request = 2;
@@ -59,6 +64,8 @@ message SearchUserResponse {
 service UserService {
     rpc CreateUser(CreateUserRequest) returns (AuthResponse);
     rpc UpdateState(UpdateStateRequest) returns (Response);
+    rpc UpdateActivity(UpdateActivityRequest) returns (Response);
+    rpc RemoveActivity(AuthenticateRequest) returns (Response);
     rpc GetUser(AuthenticateRequest) returns (GetUserResponse);
     rpc GetFriend(FriendRequest) returns (FriendResponse);
     rpc SendFriendRequest(FriendRequest) returns (Response);

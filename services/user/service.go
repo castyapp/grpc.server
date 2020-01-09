@@ -5,6 +5,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"movie.night.gRPC.server/db"
 	"movie.night.gRPC.server/db/models"
 	"movie.night.gRPC.server/proto"
@@ -16,9 +17,96 @@ import (
 
 type Service struct {}
 
-func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
+func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateRequest) (*proto.Response, error) {
 
-	database := db.Connection
+	user, err := auth.Authenticate(req)
+	if err != nil {
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized!",
+		}, nil
+	}
+
+	mdCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
+
+	var (
+		filter = bson.M{"_id": user.ID}
+		update = bson.M{
+			"$set": bson.M{
+				"activity": bson.M{},
+			},
+		}
+	)
+
+	if _, err := db.Connection.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+		sentry.CaptureException(err)
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusInternalServerError,
+			Message: "The requested parameter is not updated!",
+		}, nil
+	}
+
+	return &proto.Response{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "The requested parameter is updated successfully!",
+	}, nil
+}
+
+func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityRequest) (*proto.Response, error) {
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized!",
+		}, nil
+	}
+
+	mdCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
+
+	activityObjectId, err := primitive.ObjectIDFromHex(req.Activity.Id)
+	if err != nil {
+
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusNotAcceptable,
+			Message: "Activity id is invalid!",
+		}, nil
+	}
+
+	var (
+		filter = bson.M{"_id": user.ID}
+		update = bson.M{
+			"$set": bson.M{
+				"activity": bson.M{
+					"id": activityObjectId,
+					"activity": req.Activity.Activity,
+				},
+			},
+		}
+	)
+
+	if _, err := db.Connection.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+		sentry.CaptureException(err)
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusInternalServerError,
+			Message: "The requested parameter is not updated!",
+		}, nil
+	}
+
+	return &proto.Response{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "The requested parameter is updated successfully!",
+	}, nil
+}
+
+func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
@@ -40,7 +128,7 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 		}
 	)
 
-	if _, err := database.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+	if _, err := db.Connection.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
 		sentry.CaptureException(err)
 		return &proto.Response{
 			Status:  "failed",
