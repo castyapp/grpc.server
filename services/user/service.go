@@ -83,7 +83,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 		update = bson.M{
 			"$set": bson.M{
 				"activity": bson.M{
-					"id": activityObjectId,
+					"_id": activityObjectId,
 					"activity": req.Activity.Activity,
 				},
 			},
