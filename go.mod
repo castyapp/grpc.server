@@ -12,6 +12,7 @@ require (
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
+	gitlab.com/movienight1/grpc.proto v0.0.0-20200109130142-83d752fbf3d7
 	go.mongodb.org/mongo-driver v1.2.0
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
 	google.golang.org/grpc v1.26.0

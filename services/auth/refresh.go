@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 	"errors"
+	"gitlab.com/movienight1/grpc.proto"
 	"movie.night.gRPC.server/jwt"
-	"movie.night.gRPC.server/proto"
 	"net/http"
 )
 

@@ -3,12 +3,12 @@ package auth
 import (
 	"context"
 	"github.com/getsentry/sentry-go"
+	"gitlab.com/movienight1/grpc.proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 	"movie.night.gRPC.server/db"
 	"movie.night.gRPC.server/db/models"
 	"movie.night.gRPC.server/jwt"
-	"movie.night.gRPC.server/proto"
 	"net/http"
 	"regexp"
 	"time"

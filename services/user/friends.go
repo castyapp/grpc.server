@@ -2,11 +2,11 @@ package user
 
 import (
 	"context"
+	"gitlab.com/movienight1/grpc.proto"
+	"gitlab.com/movienight1/grpc.proto/messages"
 	"go.mongodb.org/mongo-driver/bson"
 	"movie.night.gRPC.server/db"
 	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/proto"
-	"movie.night.gRPC.server/proto/messages"
 	"movie.night.gRPC.server/services/auth"
 	"net/http"
 	"time"

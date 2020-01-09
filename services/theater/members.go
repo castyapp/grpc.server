@@ -2,12 +2,12 @@ package theater
 
 import (
 	"context"
+	"gitlab.com/movienight1/grpc.proto"
+	"gitlab.com/movienight1/grpc.proto/messages"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"movie.night.gRPC.server/db"
 	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/proto"
-	"movie.night.gRPC.server/proto/messages"
 	"movie.night.gRPC.server/services/auth"
 	"movie.night.gRPC.server/services/user"
 	"net/http"
@@ -17,9 +17,7 @@ import (
 func (s *Service) GetMembers(ctx context.Context, req *proto.GetTheaterMembersRequest) (*proto.TheaterMembersResponse, error) {
 
 	var (
-		theater     = new(models.Theater)
 		collection  = db.Connection.Collection("theater_members")
-		theaterCol  = db.Connection.Collection("theaters")
 		usersCollection = db.Connection.Collection("users")
 		emptyResponse   = &proto.TheaterMembersResponse{
 			Status:  "success",
@@ -43,11 +41,7 @@ func (s *Service) GetMembers(ctx context.Context, req *proto.GetTheaterMembersRe
 		return emptyResponse, err
 	}
 
-	if err := theaterCol.FindOne(mCtx, bson.M{ "_id": theaterObjectId }).Decode(theater); err != nil {
-		return emptyResponse, err
-	}
-
-	cursor, err := collection.Find(mCtx, bson.M{ "theater_id": theater.ID })
+	cursor, err := collection.Find(mCtx, bson.M{ "theater_id": theaterObjectId })
 	if err != nil {
 		return emptyResponse, err
 	}
@@ -81,10 +75,8 @@ func (s *Service) AddMember(ctx context.Context, req *proto.AddOrRemoveMemberReq
 
 	var (
 		theater         = new(models.Theater)
-		member          = new(models.User)
 		theaterCol      = db.Connection.Collection("theaters")
 		collection      = db.Connection.Collection("theater_members")
-		usersCollection = db.Connection.Collection("users")
 		failedResponse  = &proto.Response{
 			Status:  "failed",
 			Code:    http.StatusInternalServerError,
@@ -94,7 +86,8 @@ func (s *Service) AddMember(ctx context.Context, req *proto.AddOrRemoveMemberReq
 
 	mCtx, _ := context.WithTimeout(ctx, 10 * time.Second)
 
-	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
+	member, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
 		return &proto.Response{
 			Status:  "failed",
 			Code:    http.StatusUnauthorized,
@@ -107,15 +100,6 @@ func (s *Service) AddMember(ctx context.Context, req *proto.AddOrRemoveMemberReq
 		return failedResponse, err
 	}; {
 		if err := theaterCol.FindOne(mCtx, bson.M{ "_id": theaterObjectId }).Decode(theater); err != nil {
-			return failedResponse, err
-		}
-	}
-
-	memberObjectId, err := primitive.ObjectIDFromHex(req.MemberId)
-	if err != nil {
-		return failedResponse, err
-	}; {
-		if err := usersCollection.FindOne(mCtx, bson.M{ "_id": memberObjectId }).Decode(member); err != nil {
 			return failedResponse, err
 		}
 	}
@@ -148,9 +132,46 @@ func (s *Service) AddMember(ctx context.Context, req *proto.AddOrRemoveMemberReq
 	return failedResponse, nil
 }
 
-func (s *Service) RemoveMember(ctx context.Context, request *proto.AddOrRemoveMemberRequest) (*proto.Response, error) {
+func (s *Service) RemoveMember(ctx context.Context, req *proto.AddOrRemoveMemberRequest) (*proto.Response, error) {
 
+	var (
+		collection      = db.Connection.Collection("theater_members")
+		failedResponse  = &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusInternalServerError,
+			Message: "Could not add member to theater!",
+		}
+	)
 
+	mCtx, _ := context.WithTimeout(ctx, 10 * time.Second)
 
-	return nil, nil
+	member, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return &proto.Response{
+			Status:  "failed",
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized!",
+		}, nil
+	}
+
+	theaterObjectId, err := primitive.ObjectIDFromHex(req.TheaterId)
+	if err != nil {
+		return failedResponse, err
+	}
+
+	// removing member from theater_members collection
+	filter := bson.M{
+		"theater_id": theaterObjectId,
+		"user_id": member.ID,
+	}
+
+	if _, err := collection.DeleteOne(mCtx, filter); err != nil {
+		return failedResponse, nil
+	}
+
+	return &proto.Response{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "User removed from theater successfully!",
+	}, nil
 }

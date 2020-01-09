@@ -2,12 +2,12 @@ package theater
 
 import (
 	"context"
+	"gitlab.com/movienight1/grpc.proto"
+	"gitlab.com/movienight1/grpc.proto/messages"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"movie.night.gRPC.server/db"
 	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/proto"
-	"movie.night.gRPC.server/proto/messages"
 	"net/http"
 	"time"
 )

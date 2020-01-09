@@ -2,9 +2,9 @@ package theater
 
 import (
 	"context"
+	"gitlab.com/movienight1/grpc.proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"movie.night.gRPC.server/db"
-	"movie.night.gRPC.server/proto"
 	"movie.night.gRPC.server/services"
 	"movie.night.gRPC.server/services/auth"
 	"net/http"
