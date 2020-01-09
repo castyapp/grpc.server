@@ -150,7 +150,7 @@ func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
 	joinedAt,  _ := ptypes.TimestampProto(user.JoinedAt)
 	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
 
-	return &messages.User{
+	protoUser := &messages.User{
 		Id:        user.ID.Hex(),
 		Fullname:  user.Fullname,
 		Username:  user.Username,
@@ -158,15 +158,20 @@ func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
 		Email:     user.Email,
 		IsActive:  user.IsActive,
 		Avatar:    user.Avatar,
-		Activity:  &messages.Activity{
-			Id:       user.Activity.ID.Hex(),
-			Activity: user.Activity.Activity,
-		},
 		State:     messages.PERSONAL_STATE(user.State),
 		LastLogin: lastLogin,
 		JoinedAt:  joinedAt,
 		UpdatedAt: updatedAt,
-	}, nil
+	}
+
+	if user.Activity.ID != nil {
+		protoUser.Activity = &messages.Activity{
+			Id: user.Activity.ID.Hex(),
+			Activity: user.Activity.Activity,
+		}
+	}
+
+	return protoUser, nil
 }
 
 func (s *Service) GetUser(ctx context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
