@@ -7,12 +7,12 @@ import (
 	"movie.night.gRPC.server/db"
 	"movie.night.gRPC.server/db/models"
 	"movie.night.gRPC.server/proto"
-	"movie.night.gRPC.server/services/auth"
+	"movie.night.gRPC.server/proto/messages"
 	"net/http"
 	"time"
 )
 
-func (s *Service) GetUserTheater(ctx context.Context, req *proto.GetTheaterRequest) (*proto.UserTheaterResponse, error) {
+func (s *Service) GetTheater(ctx context.Context, theater *messages.Theater) (*proto.UserTheaterResponse, error) {
 
 	var (
 		collection     = db.Connection.Collection("theaters")
@@ -23,16 +23,7 @@ func (s *Service) GetUserTheater(ctx context.Context, req *proto.GetTheaterReque
 		}
 	)
 
-	_, err := auth.Authenticate(req.AuthRequest)
-	if err != nil {
-		return &proto.UserTheaterResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
-	}
-
-	if req.TheaterId == "" {
+	if theater.Id == "" {
 		return &proto.UserTheaterResponse{
 			Status:  "failed",
 			Code:    420,
@@ -40,11 +31,11 @@ func (s *Service) GetUserTheater(ctx context.Context, req *proto.GetTheaterReque
 		}, nil
 	}
 
-	objectId, _ := primitive.ObjectIDFromHex(req.TheaterId)
+	objectId, _ := primitive.ObjectIDFromHex(theater.Id)
 
 	filter := bson.M{
 		"$or": []interface{} {
-			bson.M{"hash": req.TheaterId},
+			bson.M{"hash": theater.Hash},
 			bson.M{"_id": objectId},
 		},
 	}
