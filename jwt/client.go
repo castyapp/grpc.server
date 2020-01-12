@@ -87,7 +87,7 @@ func CreateNewTokens(userid string) (token, refreshedToken string, err error) {
 
 func createAuthToken(userid string) (token string, err error) {
 
-	authTokenExp := time.Now().Add(time.Minute * time.Duration(expireTimeInt)).Unix()
+	authTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeInt)).Unix()
 
 	authClaims := jwt.StandardClaims{
 		Subject: userid,
