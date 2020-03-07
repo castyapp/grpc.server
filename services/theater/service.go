@@ -2,14 +2,14 @@ package theater
 
 import (
 	"context"
+	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.server/db"
+	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/CastyLab/grpc.server/services/user"
 	"github.com/getsentry/sentry-go"
-	"gitlab.com/movienight1/grpc.proto"
-	"gitlab.com/movienight1/grpc.proto/messages"
 	"go.mongodb.org/mongo-driver/bson"
-	"movie.night.gRPC.server/db"
-	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/services/auth"
-	"movie.night.gRPC.server/services/user"
 	"net/http"
 	"time"
 )

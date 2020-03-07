@@ -2,14 +2,14 @@ package user
 
 import (
 	"context"
-	"gitlab.com/movienight1/grpc.proto"
-	"gitlab.com/movienight1/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.server/db"
+	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/jwt"
+	"github.com/CastyLab/grpc.server/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"movie.night.gRPC.server/db"
-	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/jwt"
-	"movie.night.gRPC.server/services"
 	"net/http"
 	"time"
 )

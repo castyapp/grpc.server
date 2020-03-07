@@ -2,9 +2,9 @@ package auth
 
 import (
 	"errors"
-	"gitlab.com/movienight1/grpc.proto"
-	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/jwt"
+	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/jwt"
 	"strings"
 )
 

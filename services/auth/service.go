@@ -2,13 +2,13 @@ package auth
 
 import (
 	"context"
+	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.server/db"
+	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
-	"gitlab.com/movienight1/grpc.proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
-	"movie.night.gRPC.server/db"
-	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/jwt"
 	"net/http"
 	"regexp"
 	"time"
@@ -39,7 +39,7 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 	var (
 		collection   = db.Connection.Collection("users")
 		user         = new(models.User)
-		mCtx, _      = context.WithTimeout(context.Background(), 20 * time.Second)
+		mCtx, _      = context.WithTimeout(ctx, 20 * time.Second)
 		unauthorized = &proto.AuthResponse{
 			Status:  "failed",
 			Code:    http.StatusUnauthorized,
@@ -59,9 +59,9 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		}, nil
 	}
 
-	var filter = bson.M{ "username": string(req.User) }
+	var filter = bson.M{ "username": req.User }
 	if s.isEmail(req.User) {
-		filter = bson.M{ "email": string(req.User) }
+		filter = bson.M{ "email": req.User }
 	}
 
 	if err := collection.FindOne(mCtx, filter).Decode(&user); err != nil {

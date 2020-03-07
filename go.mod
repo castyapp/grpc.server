@@ -1,19 +1,14 @@
-module movie.night.gRPC.server
+module github.com/CastyLab/grpc.server
 
-go 1.13
+go 1.14
 
 require (
-	github.com/DataDog/zstd v1.4.4 // indirect
+	github.com/CastyLab/grpc.proto v0.0.0-20200307233558-63e056015558
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/getsentry/sentry-go v0.4.0
-	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/golang/protobuf v1.3.2
-	github.com/golang/snappy v0.0.1 // indirect
-	github.com/joho/godotenv v1.3.0 // indirect
-	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
-	github.com/xdg/stringprep v1.0.0 // indirect
-	gitlab.com/movienight1/grpc.proto v0.0.0-20200109130142-83d752fbf3d7
-	go.mongodb.org/mongo-driver v1.2.0
-	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
-	google.golang.org/grpc v1.26.0
+	github.com/getsentry/sentry-go v0.5.1
+	github.com/golang/protobuf v1.3.4
+	github.com/joho/godotenv v1.3.0
+	go.mongodb.org/mongo-driver v1.3.1
+	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
+	google.golang.org/grpc v1.27.1 // indirect
 )

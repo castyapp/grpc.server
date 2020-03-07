@@ -1,15 +1,12 @@
-FROM golang:1.13
+FROM golang:1.14
 
 LABEL maintainer="Alireza Josheghani <josheghani.dev@gmail.com>"
 
-ARG GITLAB_ACCESS_TOKEN
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install curl
 RUN apt-get update &&\
     apt-get -y install openssh-client
-
-RUN git config --global url."https://oauth2:${GITLAB_ACCESS_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
 
 # Creating work directory
 RUN mkdir /code
@@ -25,6 +22,6 @@ RUN cd /code/jwt/keys && ssh-keygen -t rsa -N '' -b 4096 -m PEM -f app.key &&\
 WORKDIR /code
 
 # build project
-RUN go build -o movie.night.gRPC.server .
+RUN go build -o casty.gRPC.server .
 
-CMD ["./movie.night.gRPC.server", "-port", "55283"]
+CMD ["./casty.gRPC.server", "-port", "55283"]

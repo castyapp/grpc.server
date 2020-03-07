@@ -3,12 +3,12 @@ package user
 import (
 	"context"
 	"fmt"
-	"gitlab.com/movienight1/grpc.proto"
+	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.server/db"
+	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"movie.night.gRPC.server/db"
-	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/services/auth"
 	"net/http"
 	"time"
 )
@@ -39,7 +39,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		}, nil
 	}
 
-	objectId, err := primitive.ObjectIDFromHex(string(req.FriendId))
+	objectId, err := primitive.ObjectIDFromHex(req.FriendId)
 	if err != nil {
 		return nil, fmt.Errorf("invalid friend id")
 	}

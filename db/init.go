@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	Client *mongo.Client
 	Connection *mongo.Database
 )
 
@@ -41,6 +40,5 @@ func init() {
 		log.Fatal(err)
 	}
 
-	Client = client
 	Connection = client.Database(os.Getenv("DB_NAME"))
 }

@@ -3,12 +3,12 @@ package user
 import (
 	"context"
 	"errors"
-	"gitlab.com/movienight1/grpc.proto"
-	"gitlab.com/movienight1/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.server/db"
+	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
-	"movie.night.gRPC.server/db"
-	"movie.night.gRPC.server/db/models"
-	"movie.night.gRPC.server/services/auth"
 	"net/http"
 	"time"
 )
