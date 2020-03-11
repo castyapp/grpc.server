@@ -1,7 +1,8 @@
 .env
-.idea
+/.idea
 client
 jwt/keys/*
 !/jwt/keys/.keep
 data
 .DS_Store
+/oauth/google/client_secret.json

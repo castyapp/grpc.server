@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	_ "github.com/joho/godotenv/autoload"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
