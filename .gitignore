@@ -6,3 +6,4 @@ jwt/keys/*
 data
 .DS_Store
 /oauth/google/client_secret.json
+/oauth/discord/client_secret.json
