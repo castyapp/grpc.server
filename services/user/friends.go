@@ -40,6 +40,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 	}
 
 	filter := bson.M{
+		"accepted": true,
 		"$or": []interface{}{
 			bson.M{"friend_id": user.ID},
 			bson.M{"user_id": user.ID},

@@ -3,10 +3,13 @@ package user
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/messages"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"time"
 )
@@ -46,6 +49,7 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 	}
 
 	filter := bson.M{
+		"accepted": true,
 		"$or": []interface{}{
 			bson.M{
 				"friend_id": user.ID,
@@ -72,4 +76,50 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		Code:    http.StatusOK,
 		Result:  friendUser,
 	}, nil
+}
+
+func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest) (*messages.Friend, error) {
+
+	var (
+		database   = db.Connection
+		dbFriend   = new(models.Friend)
+		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
+		friendsCollection = database.Collection("friends")
+		failedResponse = &messages.Friend{}
+	)
+
+	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
+		return failedResponse, err
+	}
+
+	requestObjectId, err := primitive.ObjectIDFromHex(req.RequestId)
+	if err != nil {
+		return failedResponse, err
+	}
+
+	if err := friendsCollection.FindOne(mCtx, bson.M{ "_id": requestObjectId }).Decode(dbFriend); err != nil {
+		return failedResponse, err
+	}
+
+	friendUser, err := SetDBFRToProto(dbFriend)
+	if err != nil {
+		return failedResponse, err
+	}
+
+	return friendUser, nil
+}
+
+func SetDBFRToProto(friend *models.Friend) (*messages.Friend, error) {
+
+	createdAt,  _ := ptypes.TimestampProto(friend.CreatedAt)
+	updatedAt, _ := ptypes.TimestampProto(friend.UpdatedAt)
+
+	protoUser := &messages.Friend{
+		Accepted:  friend.Accepted,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}
+
+	return protoUser, nil
+
 }
