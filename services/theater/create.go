@@ -52,12 +52,29 @@ func (s *Service) CreateTheater(ctx context.Context, req *proto.CreateTheaterReq
 	}
 
 	if req.Theater.Movie != nil {
+
+		var (
+			size int64 = 0
+			length int64 = 0
+			movieURI = req.Theater.Movie.MovieUri
+		)
+
+		movieDuration, err := GetMovieDuration(movieURI)
+		if err == nil {
+			length = movieDuration
+		}
+
+		movieSize, err := GetMovieFileSize(movieURI)
+		if err == nil {
+			size = movieSize
+		}
+
 		theater["movie"] = bson.M{
-			"movie_uri": req.Theater.Movie.MovieUri,
+			"movie_uri": movieURI,
 			"poster":    req.Theater.Movie.Poster,
-			//"subtitles": map[string] interface{} {},
-			"size":      0,
-			"length":    0,
+			"subtitles": map[string] interface{} {},
+			"size":      size,
+			"length":    length,
 			"last_played_time": 0,
 		}
 	}

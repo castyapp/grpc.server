@@ -6,7 +6,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install curl
 RUN apt-get update &&\
-    apt-get -y install openssh-client
+    apt-get -y install openssh-client &&\
+    apt-get -y install nano ffmpeg
+
+RUN ffprobe -version
 
 # Creating work directory
 RUN mkdir /code
