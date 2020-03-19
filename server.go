@@ -23,8 +23,7 @@ func main() {
 
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
-	//_ = os.Setenv("http_proxy", "socks5://127.0.0.1:65535")
-	if err := sentry.Init(sentry.ClientOptions{ Dsn: os.Getenv("SENTRY_DNS") }); err != nil {
+	if err := sentry.Init(sentry.ClientOptions{ Dsn: os.Getenv("SENTRY_DSN") }); err != nil {
 		log.Fatal(err)
 	}
 

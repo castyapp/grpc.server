@@ -72,7 +72,7 @@ func (s *Service) CreateTheater(ctx context.Context, req *proto.CreateTheaterReq
 		theater["movie"] = bson.M{
 			"movie_uri": movieURI,
 			"poster":    req.Theater.Movie.Poster,
-			"subtitles": map[string] interface{} {},
+			//"subtitles": map[string] interface{} {},
 			"size":      size,
 			"length":    length,
 			"last_played_time": 0,
