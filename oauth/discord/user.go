@@ -21,6 +21,18 @@ type User struct {
 	Email          string  `json:"email"`
 }
 
+func (u *User) GetAvatar() string {
+	return u.Avatar
+}
+
+func (u *User) GetEmailAddress() string {
+	return u.Email
+}
+
+func (u *User) GetFullname() string {
+	return u.Username
+}
+
 func GetUserByToken(token *oauth2.Token) (*User, error) {
 
 	request, err := http.NewRequest(

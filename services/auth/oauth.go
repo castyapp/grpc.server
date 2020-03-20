@@ -3,12 +3,17 @@ package auth
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/messages"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/jwt"
+	"github.com/CastyLab/grpc.server/oauth"
 	"github.com/CastyLab/grpc.server/oauth/discord"
 	"github.com/CastyLab/grpc.server/oauth/google"
+	"github.com/CastyLab/grpc.server/services"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"time"
 )
@@ -16,7 +21,6 @@ import (
 func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*proto.AuthResponse, error) {
 
 	var (
-		oauthEmail   string
 		user         = new(models.User)
 		collection   = db.Connection.Collection("users")
 		mCtx, _      = context.WithTimeout(ctx, 10 * time.Second)
@@ -27,40 +31,74 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		}
 	)
 
+	var oauthUser oauth.User
 	switch req.Service {
 	case proto.OAUTHRequest_Google:
 		token, err := google.Authenticate(req.Code)
 		if err != nil {
 			return unauthorized, nil
 		}
-		oauthUser, err := google.GetUserByToken(token)
+		oauthUser, err = google.GetUserByToken(token)
 		if err != nil {
 			return unauthorized, nil
 		}
-		oauthEmail = oauthUser.Email
-
 	case proto.OAUTHRequest_Discord:
 		token, err := discord.Authenticate(req.Code)
 		if err != nil {
 			return unauthorized, nil
 		}
-		oauthUser, err := discord.GetUserByToken(token)
+		oauthUser, err = discord.GetUserByToken(token)
 		if err != nil {
 			return unauthorized, nil
 		}
-		oauthEmail = oauthUser.Email
+	default:
+		return unauthorized, nil
 	}
 
-	cursor := collection.FindOne(mCtx, bson.M{ "email": oauthEmail })
+	var (
+		userObjectId string
+		cursor = collection.FindOne(mCtx, bson.M{ "email": oauthUser.GetEmailAddress() })
+	)
+
 	if err := cursor.Decode(&user); err != nil {
-		return &proto.AuthResponse{
-			Status:  "failed",
-			Code:    http.StatusNotFound,
-			Message: "Could not find user!",
-		}, nil
+
+		avatarName, err := services.SaveAvatarFromUrl(oauthUser.GetAvatar())
+		if err != nil {
+			log.Println(err)
+			avatarName = "default"
+		}
+
+		dbUser := bson.M{
+			"fullname":   oauthUser.GetFullname(),
+			"hash":       services.GenerateHash(),
+			"username":   services.RandomUserName(),
+			"email":      oauthUser.GetEmailAddress(),
+			"password":   models.HashPassword(services.RandomString(20)),
+			"is_active":  true,
+			"state":      int(messages.PERSONAL_STATE_OFFLINE),
+			"activity":   bson.M{},
+			"avatar":     avatarName,
+			"last_login": time.Now(),
+			"joined_at":  time.Now(),
+			"updated_at": time.Now(),
+		}
+
+		result, err := collection.InsertOne(mCtx, dbUser)
+		if err != nil {
+			return &proto.AuthResponse{
+				Status:  "failed",
+				Message: "Could not create the user, Please try again later!",
+				Code:    http.StatusInternalServerError,
+			}, nil
+		}
+		userObjectId = result.InsertedID.(primitive.ObjectID).Hex()
 	}
 
-	token, refreshedToken, err := jwt.CreateNewTokens(user.ID.Hex())
+	if user.ID != nil {
+		userObjectId = user.ID.Hex()
+	}
+
+	token, refreshedToken, err := jwt.CreateNewTokens(userObjectId)
 	if err != nil {
 		return unauthorized, nil
 	}

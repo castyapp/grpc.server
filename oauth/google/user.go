@@ -16,6 +16,18 @@ type User struct {
 	Locale        string `json:"locale"`
 }
 
+func (u *User) GetAvatar() string {
+	return u.Picture
+}
+
+func (u *User) GetEmailAddress() string {
+	return u.Email
+}
+
+func (u *User) GetFullname() string {
+	return u.GivenName
+}
+
 func GetUserByToken(token *oauth2.Token) (user *User, err error) {
 	user = new(User)
 	httpClient := oauthClient.Client(context.Background(), token)
