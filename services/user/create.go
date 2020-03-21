@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -59,7 +60,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 	dbUser := bson.M{
 		"fullname":   user.Fullname,
 		"hash":       services.GenerateHash(),
-		"username":   user.Username,
+		"username":   strings.ToLower(user.Username),
 		"email":      user.Email,
 		"password":   models.HashPassword(user.Password),
 		"is_active":  true,
