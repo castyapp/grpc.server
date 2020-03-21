@@ -13,7 +13,14 @@ type User struct {
 	Hash          string                `bson:"user_hash, omitempty" json:"hash, omitempty"`
 	Email         string                `bson:"email, omitempty" json:"email, omitempty"`
 	Password      string                `bson:"password, omitempty" json:"-, omitempty"`
+
+	Verified      bool                  `bson:"verified, omitempty" json:"verified, omitempty"`
 	IsActive      bool                  `bson:"is_active, omitempty" json:"is_active, omitempty"`
+	IsStaff       bool                  `bson:"is_staff, omitempty" json:"is_staff, omitempty"`
+
+	EmailVerified bool                  `bson:"email_verified, omitempty" json:"email_verified, omitempty"`
+	EmailToken    string                `bson:"email_token, omitempty" json:"-"`
+
 	State         int                   `bson:"state, omitempty" json:"state, omitempty"`
 	Activity      Activity              `bson:"activity, omitempty" json:"activity, omitempty"`
 	Avatar        string                `bson:"avatar, omitempty" json:"avatar, omitempty"`

@@ -151,17 +151,20 @@ func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
 	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
 
 	protoUser := &messages.User{
-		Id:        user.ID.Hex(),
-		Fullname:  user.Fullname,
-		Username:  user.Username,
-		Hash:      user.Hash,
-		Email:     user.Email,
-		IsActive:  user.IsActive,
-		Avatar:    user.Avatar,
-		State:     messages.PERSONAL_STATE(user.State),
-		LastLogin: lastLogin,
-		JoinedAt:  joinedAt,
-		UpdatedAt: updatedAt,
+		Id:             user.ID.Hex(),
+		Fullname:       user.Fullname,
+		Username:       user.Username,
+		Hash:           user.Hash,
+		Email:          user.Email,
+		IsActive:       user.IsActive,
+		IsStaff:        user.IsStaff,
+		Verified:       user.Verified,
+		EmailVerified:  user.EmailVerified,
+		Avatar:         user.Avatar,
+		State:          messages.PERSONAL_STATE(user.State),
+		LastLogin:      lastLogin,
+		JoinedAt:       joinedAt,
+		UpdatedAt:      updatedAt,
 	}
 
 	if user.Activity.ID != nil {
