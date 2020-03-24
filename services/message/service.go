@@ -3,8 +3,7 @@ package message
 import (
 	"context"
 	"errors"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -17,7 +16,7 @@ import (
 
 type Service struct {}
 
-func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*messages.Message, error) {
+func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*proto.Message, error) {
 
 	var (
 		dbSender   = new(models.User)
@@ -36,7 +35,7 @@ func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*
 	createdAt, _ := ptypes.TimestampProto(message.CreatedAt)
 	updatedAt, _ := ptypes.TimestampProto(message.UpdatedAt)
 
-	protoMessage := &messages.Message{
+	protoMessage := &proto.Message{
 		Id:       message.ID.Hex(),
 		Content:  message.Content,
 		Sender:   sender,
@@ -106,7 +105,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		return failedResponse, err
 	}
 
-	var protoMessages []*messages.Message
+	var protoMessages []*proto.Message
 	for cursor.Next(mCtx) {
 		var message = new(models.Message)
 		if err := cursor.Decode(message); err != nil {

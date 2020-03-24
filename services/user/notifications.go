@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	proto "github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -15,7 +14,7 @@ import (
 	"time"
 )
 
-func SetDBNotificationToProto(notif *models.Notification) (*messages.Notification, error) {
+func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, error) {
 
 	var (
 		readAt,  _     = ptypes.TimestampProto(notif.ReadAt)
@@ -36,7 +35,7 @@ func SetDBNotificationToProto(notif *models.Notification) (*messages.Notificatio
 		return nil, err
 	}
 
-	return &messages.Notification{
+	return &proto.Notification{
 		Id:         notif.ID.Hex(),
 		Type:       notif.Type,
 		Extra:      notif.Extra.Hex(),
@@ -98,7 +97,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 	}
 
 	switch req.Notification.Type {
-	case messages.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
+	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
 		theaterObjectId, err := primitive.ObjectIDFromHex(req.Notification.Extra)
 		if err != nil {
 			return failedResponse, nil
@@ -120,7 +119,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
 	var (
-		notifications []*messages.Notification
+		notifications []*proto.Notification
 
 		database   = db.Connection
 		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)

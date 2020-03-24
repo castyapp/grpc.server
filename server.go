@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/proto"
 	_ "github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/CastyLab/grpc.server/services/message"

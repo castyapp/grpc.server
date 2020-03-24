@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -144,13 +143,13 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 	}, nil
 }
 
-func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
+func SetDBUserToProtoUser(user *models.User) (*proto.User, error) {
 
 	lastLogin, _ := ptypes.TimestampProto(user.LastLogin)
 	joinedAt,  _ := ptypes.TimestampProto(user.JoinedAt)
 	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
 
-	protoUser := &messages.User{
+	protoUser := &proto.User{
 		Id:             user.ID.Hex(),
 		Fullname:       user.Fullname,
 		Username:       user.Username,
@@ -161,14 +160,14 @@ func SetDBUserToProtoUser(user *models.User) (*messages.User, error) {
 		Verified:       user.Verified,
 		EmailVerified:  user.EmailVerified,
 		Avatar:         user.Avatar,
-		State:          messages.PERSONAL_STATE(user.State),
+		State:          proto.PERSONAL_STATE(user.State),
 		LastLogin:      lastLogin,
 		JoinedAt:       joinedAt,
 		UpdatedAt:      updatedAt,
 	}
 
 	if user.Activity.ID != nil {
-		protoUser.Activity = &messages.Activity{
+		protoUser.Activity = &proto.Activity{
 			Id: user.Activity.ID.Hex(),
 			Activity: user.Activity.Activity,
 		}

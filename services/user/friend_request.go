@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -174,7 +173,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	frInsertID := friendrequestInsertData.InsertedID.(primitive.ObjectID)
 
 	notification := bson.M{
-		"type":         int64(messages.NOTIFICATION_TYPE_NEW_FRIEND),
+		"type":         int64(proto.NOTIFICATION_TYPE_NEW_FRIEND),
 		"read":         false,
 		"from_user_id": user.ID,
 		"to_user_id":   friend.ID,

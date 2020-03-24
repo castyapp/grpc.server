@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -15,7 +14,7 @@ import (
 func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest) (*proto.FriendsResponse, error) {
 
 	var (
-		friends []*messages.User
+		friends []*proto.User
 
 		database   = db.Connection
 		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)

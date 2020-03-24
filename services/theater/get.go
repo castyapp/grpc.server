@@ -2,8 +2,7 @@ package theater
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,7 +11,7 @@ import (
 	"time"
 )
 
-func (s *Service) GetTheater(ctx context.Context, theater *messages.Theater) (*proto.UserTheaterResponse, error) {
+func (s *Service) GetTheater(ctx context.Context, theater *proto.Theater) (*proto.UserTheaterResponse, error) {
 
 	var (
 		collection     = db.Connection.Collection("theaters")

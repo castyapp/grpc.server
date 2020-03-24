@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/jwt"
@@ -68,7 +67,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		"is_staff": false,
 		"email_verified": false,
 		"email_token": services.RandomString(40),
-		"state":      int(messages.PERSONAL_STATE_OFFLINE),
+		"state":      int(proto.PERSONAL_STATE_OFFLINE),
 		"activity":   bson.M{},
 		"avatar":     "default",
 		"last_login": time.Now(),

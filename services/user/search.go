@@ -3,8 +3,7 @@ package user
 import (
 	"context"
 	"errors"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -22,7 +21,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		emptyResponse = &proto.SearchUserResponse{
 			Status:  "success",
 			Code:    http.StatusOK,
-			Result:  make([]*messages.User, 0),
+			Result:  make([]*proto.User, 0),
 		}
 	)
 
@@ -54,7 +53,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		return emptyResponse, nil
 	}
 
-	var protoUsers []*messages.User
+	var protoUsers []*proto.User
 	for cursor.Next(mCtx) {
 		var dbUser = new(models.User)
 		if err := cursor.Decode(dbUser); err != nil {

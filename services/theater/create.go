@@ -2,7 +2,7 @@ package theater
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/services"
 	"github.com/CastyLab/grpc.server/services/auth"

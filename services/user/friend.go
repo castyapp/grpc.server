@@ -2,8 +2,7 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -78,14 +77,14 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 	}, nil
 }
 
-func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest) (*messages.Friend, error) {
+func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Friend, error) {
 
 	var (
 		database   = db.Connection
 		dbFriend   = new(models.Friend)
 		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
 		friendsCollection = database.Collection("friends")
-		failedResponse = &messages.Friend{}
+		failedResponse = &proto.Friend{}
 	)
 
 	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
@@ -109,12 +108,12 @@ func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest
 	return friendUser, nil
 }
 
-func SetDBFRToProto(friend *models.Friend) (*messages.Friend, error) {
+func SetDBFRToProto(friend *models.Friend) (*proto.Friend, error) {
 
 	createdAt,  _ := ptypes.TimestampProto(friend.CreatedAt)
 	updatedAt, _ := ptypes.TimestampProto(friend.UpdatedAt)
 
-	protoUser := &messages.Friend{
+	protoUser := &proto.Friend{
 		Accepted:  friend.Accepted,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,

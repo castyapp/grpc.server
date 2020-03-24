@@ -3,8 +3,7 @@ package user
 import (
 	"context"
 	"errors"
-	proto "github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +17,7 @@ func (s *Service) RollbackStates(ctx context.Context, req *proto.RollbackStatesR
 		database = db.Connection
 		collection = database.Collection("users")
 		mCtx, _ = context.WithTimeout(ctx, 10 * time.Second)
-		update = bson.M{"$set": bson.M{"state": int(messages.PERSONAL_STATE_OFFLINE)}}
+		update = bson.M{"$set": bson.M{"state": int(proto.PERSONAL_STATE_OFFLINE)}}
 	)
 
 	filter := bson.D{}

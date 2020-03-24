@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
@@ -9,7 +9,7 @@ import (
 type Notification struct {
 	ID            *primitive.ObjectID   `bson:"_id, omitempty" json:"id, omitempty"`
 
-	Type          messages.NOTIFICATION_TYPE  `bson:"type, omitempty" json:"type, omitempty"`
+	Type          proto.NOTIFICATION_TYPE  `bson:"type, omitempty" json:"type, omitempty"`
 	Extra         *primitive.ObjectID         `bson:"extra, omitempty" json:"extra, omitempty"`
 
 	Read          bool                  `bson:"read, omitempty" json:"read, omitempty"`

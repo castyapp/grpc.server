@@ -3,7 +3,7 @@ module github.com/CastyLab/grpc.server
 go 1.14
 
 require (
-	github.com/CastyLab/grpc.proto v0.0.0-20200321144432-961393848bcd
+	github.com/CastyLab/grpc.proto v0.0.0-20200324171703-743f355c1427
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/golang/protobuf v1.3.4

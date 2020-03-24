@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	"github.com/CastyLab/grpc.proto"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/jwt"
 	"strings"

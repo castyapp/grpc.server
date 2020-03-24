@@ -3,8 +3,7 @@ package message
 import (
 	"context"
 	"errors"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -67,7 +66,7 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.CreateMessageReq
 		Code: http.StatusOK,
 		Status: "success",
 		Message: "Message created successfully!",
-		Result:  &messages.Message{
+		Result:  &proto.Message{
 			Content: req.Content,
 			Sender:  protoUser,
 			Reciever: protoReciever,

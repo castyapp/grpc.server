@@ -2,8 +2,7 @@ package theater
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto"
-	"github.com/CastyLab/grpc.proto/messages"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -22,7 +21,7 @@ func (s *Service) GetMembers(ctx context.Context, req *proto.GetTheaterMembersRe
 		emptyResponse   = &proto.TheaterMembersResponse{
 			Status:  "success",
 			Code:    http.StatusOK,
-			Result:  make([]*messages.User, 0),
+			Result:  make([]*proto.User, 0),
 		}
 	)
 
@@ -46,7 +45,7 @@ func (s *Service) GetMembers(ctx context.Context, req *proto.GetTheaterMembersRe
 		return emptyResponse, err
 	}
 
-	var users = make([]*messages.User, 0)
+	var users = make([]*proto.User, 0)
 	for cursor.Next(mCtx) {
 		dbTheaterMember := new(models.TheaterMember)
 		if err := cursor.Decode(dbTheaterMember); err != nil {
