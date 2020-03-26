@@ -27,4 +27,6 @@ WORKDIR /code
 # build project
 RUN go build -o casty.gRPC.server .
 
+EXPOSE 55283
+
 CMD ["./casty.gRPC.server", "-port", "55283"]

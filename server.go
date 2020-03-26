@@ -33,13 +33,13 @@ func main() {
 
 	var (
 		server = grpc.NewServer()
-		port   = flag.String("port", "55283", "gRPC server port")
+		port   = flag.Int("port", 55283, "gRPC server port")
 		host   = flag.String("host", "0.0.0.0", "gRPC server host")
 	)
 
 	flag.Parse()
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
 		sentry.CaptureException(err)
 		log.Fatal(err)
@@ -52,7 +52,7 @@ func main() {
 
 	reflection.Register(server)
 
-	log.Println(fmt.Sprintf("Server running in tcp:%s:%s", *host, *port))
+	log.Println(fmt.Sprintf("Server running in tcp:%s:%d", *host, *port))
 	if err := server.Serve(listener); err != nil {
 		sentry.CaptureException(err)
 		log.Fatal(err)
