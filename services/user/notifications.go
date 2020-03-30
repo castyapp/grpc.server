@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
@@ -20,12 +21,13 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 		readAt,  _     = ptypes.TimestampProto(notif.ReadAt)
 		createdAt,  _  = ptypes.TimestampProto(notif.CreatedAt)
 		updatedAt, _   = ptypes.TimestampProto(notif.UpdatedAt)
-
 		fromUser = new(models.User)
 		mCtx, _  = context.WithTimeout(context.Background(), 10 * time.Second)
 	)
 
-	cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{ "_id": notif.FromUserId })
+	cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{
+		"_id": notif.FromUserId,
+	})
 	if err := cursor.Decode(&fromUser); err != nil {
 		return nil, err
 	}
@@ -35,16 +37,46 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 		return nil, err
 	}
 
-	return &proto.Notification{
+	protoMSG := &proto.Notification{
 		Id:         notif.ID.Hex(),
 		Type:       notif.Type,
-		Extra:      notif.Extra.Hex(),
 		Read:       notif.Read,
 		ReadAt:     readAt,
 		FromUser:   protoUser,
 		CreatedAt:  createdAt,
 		UpdatedAt:  updatedAt,
-	}, nil
+	}
+
+	switch notif.Type {
+	case proto.NOTIFICATION_TYPE_NEW_FRIEND:
+		notifFriendData := new(models.User)
+		cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{
+			"_id": notif.Extra,
+		})
+		if err := cursor.Decode(&notifFriendData); err != nil {
+			return nil, err
+		}
+		ntfJson, err := json.Marshal(notifFriendData)
+		if err != nil {
+			return nil, err
+		}
+		protoMSG.Data = string(ntfJson)
+	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
+		notifTheaterData := new(models.Theater)
+		cursor := db.Connection.Collection("theaters").FindOne(mCtx, bson.M{
+			"_id": notif.Extra,
+		})
+		if err := cursor.Decode(&notifTheaterData); err != nil {
+			return nil, err
+		}
+		ntfJson, err := json.Marshal(notifTheaterData)
+		if err != nil {
+			return nil, err
+		}
+		protoMSG.Data = string(ntfJson)
+	}
+
+	return protoMSG, nil
 }
 
 type NotificationData struct {
@@ -98,10 +130,18 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 
 	switch req.Notification.Type {
 	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
-		theaterObjectId, err := primitive.ObjectIDFromHex(req.Notification.Extra)
+
+		friend := new(proto.User)
+		err := json.Unmarshal([]byte(req.Notification.Data), friend)
 		if err != nil {
 			return failedResponse, nil
 		}
+
+		theaterObjectId, err := primitive.ObjectIDFromHex(friend.Id)
+		if err != nil {
+			return failedResponse, nil
+		}
+
 		notification["extra"] = theaterObjectId
 	}
 
@@ -169,10 +209,7 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		notifications = append(notifications, messageNotification)
 	}
 
-	filter := bson.M{
-		"to_user_id": user.ID,
-		"read": false,
-	}
+	filter := bson.M{"to_user_id": user.ID, "read": false}
 	unreadCount, err := notificationCollection.CountDocuments(mCtx, filter)
 	if err != nil {
 		return failedResponse, nil

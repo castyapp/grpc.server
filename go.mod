@@ -3,7 +3,7 @@ module github.com/CastyLab/grpc.server
 go 1.14
 
 require (
-	github.com/CastyLab/grpc.proto v0.0.0-20200324171703-743f355c1427
+	github.com/CastyLab/grpc.proto v0.0.0-20200330182420-c2d398772cec
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/golang/protobuf v1.3.4
@@ -11,5 +11,5 @@ require (
 	go.mongodb.org/mongo-driver v1.3.1
 	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
-	google.golang.org/grpc v1.27.1
+	google.golang.org/grpc v1.28.0
 )
