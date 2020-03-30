@@ -3,6 +3,9 @@ package user
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
@@ -11,18 +14,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"net/http"
-	"time"
 )
 
 func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, error) {
 
 	var (
-		readAt,  _     = ptypes.TimestampProto(notif.ReadAt)
-		createdAt,  _  = ptypes.TimestampProto(notif.CreatedAt)
-		updatedAt, _   = ptypes.TimestampProto(notif.UpdatedAt)
-		fromUser = new(models.User)
-		mCtx, _  = context.WithTimeout(context.Background(), 10 * time.Second)
+		readAt, _    = ptypes.TimestampProto(notif.ReadAt)
+		createdAt, _ = ptypes.TimestampProto(notif.CreatedAt)
+		updatedAt, _ = ptypes.TimestampProto(notif.UpdatedAt)
+		fromUser     = new(models.User)
+		mCtx, _      = context.WithTimeout(context.Background(), 10*time.Second)
 	)
 
 	cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{
@@ -38,29 +39,18 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 	}
 
 	protoMSG := &proto.Notification{
-		Id:         notif.ID.Hex(),
-		Type:       notif.Type,
-		Read:       notif.Read,
-		ReadAt:     readAt,
-		FromUser:   protoUser,
-		CreatedAt:  createdAt,
-		UpdatedAt:  updatedAt,
+		Id:        notif.ID.Hex(),
+		Type:      notif.Type,
+		Read:      notif.Read,
+		ReadAt:    readAt,
+		FromUser:  protoUser,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
 	}
 
 	switch notif.Type {
 	case proto.NOTIFICATION_TYPE_NEW_FRIEND:
-		notifFriendData := new(models.User)
-		cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{
-			"_id": notif.Extra,
-		})
-		if err := cursor.Decode(&notifFriendData); err != nil {
-			return nil, err
-		}
-		ntfJson, err := json.Marshal(notifFriendData)
-		if err != nil {
-			return nil, err
-		}
-		protoMSG.Data = string(ntfJson)
+		protoMSG.Data = notif.Extra.Hex()
 	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
 		notifTheaterData := new(models.Theater)
 		cursor := db.Connection.Collection("theaters").FindOne(mCtx, bson.M{
@@ -80,14 +70,14 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 }
 
 type NotificationData struct {
-	Data   string   `json:"data"`
-	User   string   `json:"user"`
+	Data string `json:"data"`
+	User string `json:"user"`
 }
 
 func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.NotificationResponse, error) {
 
 	var (
-		mCtx, _ = context.WithTimeout(ctx, 20 * time.Second)
+		mCtx, _        = context.WithTimeout(ctx, 20*time.Second)
 		collection     = db.Connection.Collection("notifications")
 		failedResponse = &proto.NotificationResponse{
 			Status:  "failed",
@@ -161,25 +151,25 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 	var (
 		notifications []*proto.Notification
 
-		database   = db.Connection
-		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
+		database = db.Connection
+		mCtx, _  = context.WithTimeout(ctx, 20*time.Second)
 
 		notificationCollection = database.Collection("notifications")
 
 		failedResponse = &proto.NotificationResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
+			Status:      "failed",
+			Code:        http.StatusInternalServerError,
 			UnreadCount: 0,
-			Message: "Could not get notifications, Please try again later!",
+			Message:     "Could not get notifications, Please try again later!",
 		}
 	)
 
 	user, err := auth.Authenticate(req)
 	if err != nil {
 		return &proto.NotificationResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
+			Status:      "failed",
+			Code:        http.StatusUnauthorized,
+			Message:     "Unauthorized!",
 			UnreadCount: 0,
 		}, nil
 	}
@@ -226,23 +216,23 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
 	var (
-		database   = db.Connection
-		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
+		database               = db.Connection
+		mCtx, _                = context.WithTimeout(ctx, 20*time.Second)
 		notificationCollection = database.Collection("notifications")
-		failedResponse = &proto.NotificationResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
+		failedResponse         = &proto.NotificationResponse{
+			Status:      "failed",
+			Code:        http.StatusInternalServerError,
 			UnreadCount: 0,
-			Message: "Could not update notifications, Please try again later!",
+			Message:     "Could not update notifications, Please try again later!",
 		}
 	)
 
 	user, err := auth.Authenticate(req)
 	if err != nil {
 		return &proto.NotificationResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
+			Status:      "failed",
+			Code:        http.StatusUnauthorized,
+			Message:     "Unauthorized!",
 			UnreadCount: 0,
 		}, nil
 	}
@@ -257,8 +247,8 @@ func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.Authentic
 	}
 
 	return &proto.NotificationResponse{
-		Status:   "success",
-		Code:     http.StatusOK,
-		Message:  "Notifications updated successfully!",
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "Notifications updated successfully!",
 	}, nil
 }
