@@ -50,7 +50,18 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 
 	switch notif.Type {
 	case proto.NOTIFICATION_TYPE_NEW_FRIEND:
-		protoMSG.Data = notif.Extra.Hex()
+		notifFriendData := new(models.Friend)
+		cursor := db.Connection.Collection("friend").FindOne(mCtx, bson.M{
+			"_id": notif.Extra,
+		})
+		if err := cursor.Decode(&notifFriendData); err != nil {
+			return nil, err
+		}
+		ntfJson, err := json.Marshal(notifFriendData)
+		if err != nil {
+			return nil, err
+		}
+		protoMSG.Data = string(ntfJson)
 	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
 		notifTheaterData := new(models.Theater)
 		cursor := db.Connection.Collection("theaters").FindOne(mCtx, bson.M{
