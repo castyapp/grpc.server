@@ -56,25 +56,28 @@ func (s *Service) CreateTheater(ctx context.Context, req *proto.CreateTheaterReq
 		var (
 			size int64 = 0
 			length int64 = 0
-			movieURI = req.Theater.Movie.MovieUri
+			movieURI = req.Theater.Movie.Uri
 		)
 
-		movieDuration, err := GetMovieDuration(movieURI)
-		if err == nil {
-			length = movieDuration
-		}
-
-		movieSize, err := GetMovieFileSize(movieURI)
-		if err == nil {
-			size = movieSize
+		switch movieTYPE := req.Theater.Movie.Type; movieTYPE {
+		case proto.MovieType_URI:
+			movieDuration, err := GetMovieDuration(movieURI)
+			if err == nil {
+				length = movieDuration
+			}
+			movieSize, err := GetMovieFileSize(movieURI)
+			if err == nil {
+				size = movieSize
+			}
 		}
 
 		theater["movie"] = bson.M{
-			"movie_uri": movieURI,
-			"poster":    req.Theater.Movie.Poster,
-			//"subtitles": map[string] interface{} {},
-			"size":      size,
-			"length":    length,
+			"type":             req.Theater.Movie.Type,
+			"uri":              movieURI,
+			"poster":           req.Theater.Movie.Poster,
+			//"subtitles":      map[string] interface{} {},
+			"size":             size,
+			"length":           length,
 			"last_played_time": 0,
 		}
 	}

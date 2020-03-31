@@ -24,12 +24,13 @@ func SetDbTheaterToMessageTheater(ctx context.Context, theater *models.Theater) 
 		thProtoMessageUser = new(proto.User)
 
 		movie = &proto.Movie{
-			MovieUri: theater.Movie.MovieUri,
-			Poster: theater.Movie.Poster,
-			Size:   int64(theater.Movie.Size),
-			Length: int64(theater.Movie.Length),
-			LastPlayedTime: theater.Movie.LastPlayedTime,
-			Subtitles: []*proto.Subtitle{},
+			Type:            theater.Movie.Type,
+			Uri:             theater.Movie.Uri,
+			Poster:          theater.Movie.Poster,
+			Size:            int64(theater.Movie.Size),
+			Length:          int64(theater.Movie.Length),
+			LastPlayedTime:  theater.Movie.LastPlayedTime,
+			Subtitles:       []*proto.Subtitle{},
 		}
 	)
 
