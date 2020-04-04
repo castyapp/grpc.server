@@ -56,11 +56,22 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	fids := make([]primitive.ObjectID, 0)
 	for _, friendID := range req.FriendIds {
+		if theater.UserId.Hex() == friendID {
+			continue
+		}
 		friendObjectId, err := primitive.ObjectIDFromHex(friendID)
 		if err != nil {
 			continue
 		}
 		fids = append(fids, friendObjectId)
+	}
+
+	if len(fids) == 0 {
+		return &proto.Response{
+			Code:     http.StatusOK,
+			Status:   "success",
+			Message:  "Invitations sent successfully!",
+		}, nil
 	}
 
 	cursor, err := usersCollection.Find(mCtx, bson.M{"_id": bson.M{"$in": fids}})

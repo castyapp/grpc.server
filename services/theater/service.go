@@ -9,6 +9,7 @@ import (
 	"github.com/CastyLab/grpc.server/services/user"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
 	"time"
 )
@@ -73,7 +74,12 @@ func (s *Service) GetUserTheaters(ctx context.Context, req *proto.GetAllUserThea
 
 	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
 
-	cursor, err := collection.Find(mCtx, bson.M{"user_id": authUser.ID})
+	qOpts := options.Find()
+	qOpts.SetSort(bson.D{
+		{"created_at", -1},
+	})
+
+	cursor, err := collection.Find(mCtx, bson.M{"user_id": authUser.ID}, qOpts)
 	if err != nil {
 		sentry.CaptureException(err)
 		return &proto.UserTheatersResponse{
