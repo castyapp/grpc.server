@@ -9,8 +9,8 @@ import (
 type Notification struct {
 	ID            *primitive.ObjectID   `bson:"_id, omitempty" json:"id, omitempty"`
 
-	Type          proto.NOTIFICATION_TYPE  `bson:"type, omitempty" json:"type, omitempty"`
-	Extra         *primitive.ObjectID         `bson:"extra, omitempty" json:"extra, omitempty"`
+	Type          proto.Notification_NOTIFICATION_TYPE  `bson:"type, omitempty" json:"type, omitempty"`
+	Extra         *primitive.ObjectID                   `bson:"extra, omitempty" json:"extra, omitempty"`
 
 	Read          bool                  `bson:"read, omitempty" json:"read, omitempty"`
 

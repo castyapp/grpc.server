@@ -49,7 +49,7 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 	}
 
 	switch notif.Type {
-	case proto.NOTIFICATION_TYPE_NEW_FRIEND:
+	case proto.Notification_NEW_FRIEND:
 		notifFriendData := new(models.Friend)
 		cursor := db.Connection.Collection("friends").FindOne(mCtx, bson.M{
 			"_id": notif.Extra,
@@ -62,7 +62,7 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 			return nil, err
 		}
 		protoMSG.Data = string(ntfJson)
-	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
+	case proto.Notification_NEW_THEATER_INVITE:
 		notifTheaterData := new(models.Theater)
 		cursor := db.Connection.Collection("theaters").FindOne(mCtx, bson.M{
 			"_id": notif.Extra,
@@ -130,7 +130,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 	}
 
 	switch req.Notification.Type {
-	case proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE:
+	case proto.Notification_NEW_THEATER_INVITE:
 
 		friend := new(proto.User)
 		err := json.Unmarshal([]byte(req.Notification.Data), friend)
@@ -227,9 +227,8 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
 	var (
-		database               = db.Connection
-		mCtx, _                = context.WithTimeout(ctx, 20*time.Second)
-		notificationCollection = database.Collection("notifications")
+		mCtx, _                = context.WithTimeout(ctx, 10 * time.Second)
+		notificationCollection = db.Connection.Collection("notifications")
 		failedResponse         = &proto.NotificationResponse{
 			Status:      "failed",
 			Code:        http.StatusInternalServerError,
@@ -249,8 +248,15 @@ func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.Authentic
 	}
 
 	var (
-		filter = bson.M{"user_id": user.ID, "read": false}
-		update = bson.M{"read": true}
+		filter = bson.M{
+			"to_user_id": user.ID,
+			"read": false,
+		}
+		update = bson.M{
+			"$set": bson.M{
+				"read": true,
+			},
+		}
 	)
 
 	if _, err := notificationCollection.UpdateMany(mCtx, filter, update); err != nil {

@@ -92,7 +92,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 	notifications := make([]interface{}, 0)
 	for _, friend := range friends {
 		notifications = append(notifications, bson.M{
-			"type":         int64(proto.NOTIFICATION_TYPE_NEW_THEATER_INVITE),
+			"type":         int64(proto.Notification_NEW_THEATER_INVITE),
 			"read":         false,
 			"from_user_id": user.ID,
 			"to_user_id":   friend.ID,

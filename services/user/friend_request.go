@@ -173,7 +173,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	frInsertID := friendrequestInsertData.InsertedID.(primitive.ObjectID)
 
 	notification := bson.M{
-		"type":         int64(proto.NOTIFICATION_TYPE_NEW_FRIEND),
+		"type":         int64(proto.Notification_NEW_FRIEND),
 		"read":         false,
 		"from_user_id": user.ID,
 		"to_user_id":   friend.ID,
