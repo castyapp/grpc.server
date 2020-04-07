@@ -5,6 +5,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -81,6 +82,15 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	}
 
 	if updateResult.ModifiedCount == 1 {
+
+		friendID := friendRequest.FriendId.Hex()
+		if friendRequest.FriendId.Hex() == user.ID.Hex() {
+			friendID = friendRequest.UserId.Hex()
+		}
+
+		// send new friend request event to friend websocket clients
+		_ = internal.Client.UserService.AcceptNotificationEvent(user, friendID)
+
 		return &proto.Response{
 			Status:  "success",
 			Code:    http.StatusOK,
@@ -186,6 +196,9 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	if _, err := notificationsCollection.InsertOne(mCtx, notification); err != nil {
 		return failedResponse, nil
 	}
+
+	// send new friend request event to friend websocket clients
+	_ = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
 
 	return &proto.Response{
 		Status:  "success",

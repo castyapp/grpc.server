@@ -5,6 +5,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -105,6 +106,11 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	if _, err := notificationsCollections.InsertMany(mCtx, notifications); err != nil {
 		return emptyResponse, nil
+	}
+
+	for _, friend := range friends {
+		// send a new notification event to friend
+		_ = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
 	}
 
 	return &proto.Response{
