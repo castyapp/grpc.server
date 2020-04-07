@@ -146,14 +146,31 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		notification["extra"] = theaterObjectId
 	}
 
-	if _, err := collection.InsertOne(mCtx, notification); err != nil {
+	result, err := collection.InsertOne(mCtx, notification)
+	if err != nil {
 		return failedResponse, nil
 	}
+
+	var (
+		insertedID   = result.InsertedID.(*primitive.ObjectID)
+		createdAt, _ = ptypes.TimestampProto(time.Now())
+	)
 
 	return &proto.NotificationResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
 		Message: "Notification created successfully!",
+		Result: []*proto.Notification{
+			{
+				Id:                   insertedID.Hex(),
+				Type:                 req.Notification.Type,
+				Data:                 notification["extra"].(string),
+				Read:                 false,
+				FromUserId:           user.ID.Hex(),
+				ToUserId:             friendObjectId.Hex(),
+				CreatedAt:            createdAt,
+			},
+		},
 	}, nil
 }
 
