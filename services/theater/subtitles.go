@@ -135,6 +135,8 @@ func (s *Service) AddSubtitle(ctx context.Context, req *proto.AddOrRemoveSubtitl
 		"theater_id": theaterObjectID,
 		"lang": req.Subtitle.Lang,
 		"file": req.Subtitle.File,
+		"created_at": time.Now(),
+		"updated_at": time.Now(),
 	}
 
 	result, err := collection.InsertOne(mCtx, subtitle)
