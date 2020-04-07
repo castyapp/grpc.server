@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
+	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/services"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
@@ -71,11 +72,13 @@ func (s *Service) CreateTheater(ctx context.Context, req *proto.CreateTheaterReq
 			}
 		}
 
+		subtitles := make([]models.Subtitle, 0)
+
 		theater["movie"] = bson.M{
 			"type":             req.Theater.Movie.Type,
 			"uri":              movieURI,
 			"poster":           req.Theater.Movie.Poster,
-			//"subtitles":      map[string] interface{} {},
+			"subtitles":        subtitles,
 			"size":             size,
 			"length":           length,
 			"last_played_time": 0,
