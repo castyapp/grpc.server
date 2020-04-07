@@ -86,8 +86,8 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 	}
 
 	return &proto.TheaterSubtitlesResponse{
-		Status:  "failed",
-		Code:    http.StatusUnauthorized,
+		Status:  "success",
+		Code:    http.StatusOK,
 		Result:  subtitles,
 	}, nil
 }
