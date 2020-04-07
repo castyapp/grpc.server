@@ -8,6 +8,7 @@ import (
 	"github.com/CastyLab/grpc.server/services"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"time"
 )
@@ -85,13 +86,17 @@ func (s *Service) CreateTheater(ctx context.Context, req *proto.CreateTheaterReq
 		}
 	}
 
-	if _, err := collection.InsertOne(mCtx, theater); err != nil {
+	result, err := collection.InsertOne(mCtx, theater)
+	if err != nil {
 		return failedResponse, nil
 	}
+
+	insertedID := result.InsertedID.(primitive.ObjectID)
 
 	return &proto.Response{
 		Status:  "success",
 		Code:    http.StatusOK,
 		Message: "Theater created successfully!",
+		Result: []byte(insertedID.Hex()),
 	}, nil
 }
