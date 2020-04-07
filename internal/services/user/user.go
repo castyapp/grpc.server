@@ -54,10 +54,6 @@ func (s *InternalWsUserService) AcceptNotificationEvent(user *models.User, frien
 		Verified:  user.Verified,
 		IsStaff:   user.IsStaff,
 		State:     proto.PERSONAL_STATE(user.State),
-		Activity: &proto.Activity{
-			Id:       user.Activity.ID.Hex(),
-			Activity: user.Activity.Activity,
-		},
 		Avatar:    user.Avatar,
 	}
 
