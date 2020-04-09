@@ -5,8 +5,8 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/CastyLab/grpc.server/services/user"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -40,7 +40,7 @@ func SetDbTheaterToMessageTheater(ctx context.Context, theater *models.Theater) 
 		return nil, err
 	}
 
-	thProtoMessageUser, err = user.SetDBUserToProtoUser(thUser)
+	thProtoMessageUser, err = helpers.SetDBUserToProtoUser(thUser)
 	if err != nil {
 		return nil, err
 	}

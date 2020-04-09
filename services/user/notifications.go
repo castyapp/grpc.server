@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"encoding/json"
+	"github.com/CastyLab/grpc.server/helpers"
 	"net/http"
 	"time"
 
@@ -33,7 +34,7 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 		return nil, err
 	}
 
-	protoUser, err := SetDBUserToProtoUser(fromUser)
+	protoUser, err := helpers.SetDBUserToProtoUser(fromUser)
 	if err != nil {
 		return nil, err
 	}

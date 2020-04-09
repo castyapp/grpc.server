@@ -5,6 +5,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
@@ -68,7 +69,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 			break
 		}
 
-		messageUser, err := SetDBUserToProtoUser(friendUserObject)
+		messageUser, err := helpers.SetDBUserToProtoUser(friendUserObject)
 		if err != nil {
 			break
 		}

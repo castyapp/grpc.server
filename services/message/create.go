@@ -6,8 +6,8 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	user2 "github.com/CastyLab/grpc.server/services/user"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
@@ -58,8 +58,8 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.CreateMessageReq
 		return failedResponse, err
 	}
 
-	protoUser, _ := user2.SetDBUserToProtoUser(user)
-	protoReciever, _ := user2.SetDBUserToProtoUser(reciever)
+	protoUser, _ := helpers.SetDBUserToProtoUser(user)
+	protoReciever, _ := helpers.SetDBUserToProtoUser(reciever)
 	nowTime, _ := ptypes.TimestampProto(time.Now())
 
 	return &proto.CreateMessageResponse{

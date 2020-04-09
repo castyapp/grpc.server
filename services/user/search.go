@@ -6,6 +6,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
@@ -59,7 +60,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		if err := cursor.Decode(dbUser); err != nil {
 			break
 		}
-		protoUser, err := SetDBUserToProtoUser(dbUser)
+		protoUser, err := helpers.SetDBUserToProtoUser(dbUser)
 		if err != nil {
 			break
 		}

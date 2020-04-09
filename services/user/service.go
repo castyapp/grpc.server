@@ -4,10 +4,9 @@ import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
@@ -143,39 +142,6 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 	}, nil
 }
 
-func SetDBUserToProtoUser(user *models.User) (*proto.User, error) {
-
-	lastLogin, _ := ptypes.TimestampProto(user.LastLogin)
-	joinedAt,  _ := ptypes.TimestampProto(user.JoinedAt)
-	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
-
-	protoUser := &proto.User{
-		Id:             user.ID.Hex(),
-		Fullname:       user.Fullname,
-		Username:       user.Username,
-		Hash:           user.Hash,
-		Email:          user.Email,
-		IsActive:       user.IsActive,
-		IsStaff:        user.IsStaff,
-		Verified:       user.Verified,
-		EmailVerified:  user.EmailVerified,
-		Avatar:         user.Avatar,
-		State:          proto.PERSONAL_STATE(user.State),
-		LastLogin:      lastLogin,
-		JoinedAt:       joinedAt,
-		UpdatedAt:      updatedAt,
-	}
-
-	if user.Activity.ID != nil {
-		protoUser.Activity = &proto.Activity{
-			Id: user.Activity.ID.Hex(),
-			Activity: user.Activity.Activity,
-		}
-	}
-
-	return protoUser, nil
-}
-
 func (s *Service) GetUser(ctx context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
 
 	user, err := auth.Authenticate(req)
@@ -183,7 +149,7 @@ func (s *Service) GetUser(ctx context.Context, req *proto.AuthenticateRequest) (
 		return nil, err
 	}
 
-	protoUser, err := SetDBUserToProtoUser(user)
+	protoUser, err := helpers.SetDBUserToProtoUser(user)
 	if err != nil {
 		sentry.CaptureException(err)
 		return &proto.GetUserResponse{

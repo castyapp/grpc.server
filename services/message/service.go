@@ -6,8 +6,8 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/CastyLab/grpc.server/services/user"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
@@ -27,7 +27,7 @@ func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*
 		return nil, err
 	}
 
-	sender, err := user.SetDBUserToProtoUser(dbSender)
+	sender, err := helpers.SetDBUserToProtoUser(dbSender)
 	if err != nil {
 		return nil, err
 	}
