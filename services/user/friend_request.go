@@ -89,7 +89,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		}
 
 		// send new friend request event to friend websocket clients
-		_ = internal.Client.UserService.AcceptNotificationEvent(user, friendID)
+		_ = internal.Client.UserService.AcceptNotificationEvent(req.AuthRequest, user, friendID)
 
 		return &proto.Response{
 			Status:  "success",

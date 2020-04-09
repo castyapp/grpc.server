@@ -43,7 +43,7 @@ func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
 	return errors.New("Something went wrong, Could not send event!")
 }
 
-func (s *InternalWsUserService) AcceptNotificationEvent(user *models.User, friendID string) error {
+func (s *InternalWsUserService) AcceptNotificationEvent(auth *proto.AuthenticateRequest, user *models.User, friendID string) error {
 
 	protoUser := &proto.User{
 		Id:        user.ID.Hex(),
@@ -71,6 +71,7 @@ func (s *InternalWsUserService) AcceptNotificationEvent(user *models.User, frien
 		return err
 	}
 
+	request.Header.Set("Authorization", string(auth.Token))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := s.HttpClient.Do(request)
