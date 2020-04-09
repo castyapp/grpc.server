@@ -77,9 +77,8 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 
 	for thCursor.Next(mCtx) {
 		theater := new(models.Theater)
-		if err := cursor.Decode(theater); err != nil {
-			sentry.CaptureException(err)
-			break
+		if err := thCursor.Decode(theater); err != nil {
+			continue
 		}
 		th, err := SetDbTheaterToMessageTheater(mCtx, theater)
 		if err != nil {
