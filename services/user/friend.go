@@ -43,7 +43,14 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		}, nil
 	}
 
-	if err := userCollection.FindOne(mCtx, bson.M{ "username": req.FriendId }).Decode(dbFriendUserObject); err != nil {
+	findFriendFilter := bson.M{ "username": req.FriendId }
+
+	friendObjectId, err := primitive.ObjectIDFromHex(req.FriendId)
+	if err == nil {
+		findFriendFilter = bson.M{ "_id": friendObjectId }
+	}
+
+	if err := userCollection.FindOne(mCtx, findFriendFilter).Decode(dbFriendUserObject); err != nil {
 		return failedResponse, nil
 	}
 
