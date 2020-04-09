@@ -9,6 +9,7 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"time"
 )
@@ -110,7 +111,10 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	for _, friend := range friends {
 		// send a new notification event to friend
-		_ = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
+		err := internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return &proto.Response{

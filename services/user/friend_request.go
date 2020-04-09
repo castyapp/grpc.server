@@ -9,6 +9,7 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"time"
 )
@@ -198,7 +199,10 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	}
 
 	// send new friend request event to friend websocket clients
-	_ = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
+	err = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
+	if err != nil {
+		log.Println(err)
+	}
 
 	return &proto.Response{
 		Status:  "success",

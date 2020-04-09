@@ -20,7 +20,7 @@ func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
 	params := url.Values{}
 	params.Set("user_id", userId)
 
-	request, err := http.NewRequest("POST", "http://unix/user/@NewFriendRequestEvent", strings.NewReader(params.Encode()))
+	request, err := http.NewRequest("POST", "http://unix/user/@notifications/new", strings.NewReader(params.Encode()))
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (s *InternalWsUserService) AcceptNotificationEvent(auth *proto.Authenticate
 	params.Set("friend_id", friendID)
 	params.Set("user", string(jsonUser))
 
-	request, err := http.NewRequest("POST", "http://unix/user/@FriendRequestAcceptedEvent", strings.NewReader(params.Encode()))
+	request, err := http.NewRequest("POST", "http://unix/user/@notifications/friend/accepted", strings.NewReader(params.Encode()))
 	if err != nil {
 		return err
 	}
