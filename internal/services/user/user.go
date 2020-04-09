@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db/models"
+	user2 "github.com/CastyLab/grpc.server/services/user"
 	"github.com/pingcap/errors"
 	"net/http"
 	"net/url"
@@ -45,16 +46,9 @@ func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
 
 func (s *InternalWsUserService) AcceptNotificationEvent(auth *proto.AuthenticateRequest, user *models.User, friendID string) error {
 
-	protoUser := &proto.User{
-		Id:        user.ID.Hex(),
-		Fullname:  user.Fullname,
-		Username:  user.Username,
-		Hash:      user.Hash,
-		Email:     user.Email,
-		Verified:  user.Verified,
-		IsStaff:   user.IsStaff,
-		State:     proto.PERSONAL_STATE(user.State),
-		Avatar:    user.Avatar,
+	protoUser, err := user2.SetDBUserToProtoUser(user)
+	if err != nil {
+		return err
 	}
 
 	jsonUser, err := json.Marshal(protoUser)
