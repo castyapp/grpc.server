@@ -22,6 +22,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 		friendRequest = new(models.Friend)
 		friendsCollection = database.Collection("friends")
+		notifsCollection = database.Collection("notifications")
 
 		failedResponse = &proto.Response{
 			Status:  "failed",
@@ -68,14 +69,23 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		}, nil
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"accepted": true,
-		},
-	}
-	updateFilter := bson.M{
-		"_id": friendRequest.ID,
-	}
+	// update user's notification to read
+	_, _ = notifsCollection.UpdateOne(mCtx, bson.M{ "extra": friendRequest.ID, "to_user_id": user.ID }, bson.M{
+		"read": true,
+		"updated_at": time.Now(),
+		"read_at": time.Now(),
+	})
+
+	var (
+		update = bson.M{
+			"$set": bson.M{
+				"accepted": true,
+			},
+		}
+		updateFilter = bson.M{
+			"_id": friendRequest.ID,
+		}
+	)
 
 	updateResult, err := friendsCollection.UpdateOne(mCtx, updateFilter, update)
 	if err != nil {
