@@ -213,6 +213,8 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		return failedResponse, nil
 	}
 
+	var unreadCount int64 = 0
+
 	for cursor.Next(mCtx) {
 
 		notification := new(models.Notification)
@@ -225,13 +227,11 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 			break
 		}
 
-		notifications = append(notifications, messageNotification)
-	}
+		if !notification.Read {
+			unreadCount++
+		}
 
-	filter := bson.M{"to_user_id": user.ID, "read": false}
-	unreadCount, err := notificationCollection.CountDocuments(mCtx, filter)
-	if err != nil {
-		return failedResponse, nil
+		notifications = append(notifications, messageNotification)
 	}
 
 	return &proto.NotificationResponse{
