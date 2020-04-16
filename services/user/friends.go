@@ -8,6 +8,7 @@ import (
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
+	"log"
 	"net/http"
 	"time"
 )
@@ -32,6 +33,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 	user, err := auth.Authenticate(req)
 	if err != nil {
+		log.Println(err)
 		return &proto.FriendsResponse{
 			Status:  "failed",
 			Code:    http.StatusUnauthorized,
@@ -49,6 +51,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 	cursor, err := friendsCollection.Find(mCtx, filter)
 	if err != nil {
+		log.Println(err)
 		return failedResponse, nil
 	}
 
@@ -56,6 +59,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 		var friend = new(models.Friend)
 		if err := cursor.Decode(friend); err != nil {
+			log.Println(err)
 			break
 		}
 
@@ -66,11 +70,13 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 		friendUserObject := new(models.User)
 		if err := userCollection.FindOne(mCtx, filter).Decode(friendUserObject); err != nil {
+			log.Println(err)
 			break
 		}
 
 		messageUser, err := helpers.SetDBUserToProtoUser(friendUserObject)
 		if err != nil {
+			log.Println(err)
 			break
 		}
 

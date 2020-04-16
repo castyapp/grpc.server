@@ -7,7 +7,6 @@ import (
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
@@ -108,25 +107,10 @@ func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest
 		return failedResponse, err
 	}
 
-	friendUser, err := SetDBFRToProto(dbFriend)
+	friendUser, err := helpers.SetFriendToProto(dbFriend)
 	if err != nil {
 		return failedResponse, err
 	}
 
 	return friendUser, nil
-}
-
-func SetDBFRToProto(friend *models.Friend) (*proto.Friend, error) {
-
-	createdAt,  _ := ptypes.TimestampProto(friend.CreatedAt)
-	updatedAt, _ := ptypes.TimestampProto(friend.UpdatedAt)
-
-	protoUser := &proto.Friend{
-		Accepted:  friend.Accepted,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-	}
-
-	return protoUser, nil
-
 }
