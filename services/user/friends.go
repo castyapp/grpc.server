@@ -59,8 +59,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 		var friend = new(models.Friend)
 		if err := cursor.Decode(friend); err != nil {
-			log.Println(err)
-			break
+			continue
 		}
 
 		var filter = bson.M{"_id": friend.FriendId}
@@ -70,14 +69,12 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 		friendUserObject := new(models.User)
 		if err := userCollection.FindOne(mCtx, filter).Decode(friendUserObject); err != nil {
-			log.Println(err)
-			break
+			continue
 		}
 
 		messageUser, err := helpers.SetDBUserToProtoUser(friendUserObject)
 		if err != nil {
-			log.Println(err)
-			break
+			continue
 		}
 
 		friends = append(friends, messageUser)
