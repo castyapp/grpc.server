@@ -23,12 +23,10 @@ func (s *Service) RollbackStates(ctx context.Context, req *proto.RollbackStatesR
 		},
 	}
 
+	// filter non online users
 	filter := bson.M{
-		"$or": []interface{} {
-			bson.M{"state": int(proto.PERSONAL_STATE_ONLINE)},
-			bson.M{"state": int(proto.PERSONAL_STATE_BUSY)},
-			bson.M{"state": int(proto.PERSONAL_STATE_INVISIBLE)},
-			bson.M{"state": int(proto.PERSONAL_STATE_IDLE)},
+		"state": bson.M{
+			"$ne": int(proto.PERSONAL_STATE_OFFLINE),
 		},
 	}
 

@@ -10,7 +10,6 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -41,12 +40,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 
 	filter := bson.M{
 		"_id": bson.M{"$ne": user.ID},
-		"$or": []interface {}{
-			bson.M{"fullname": bson.M{"$regex": req.Keyword}},
-			bson.M{"fullname": bson.M{"$regex": strings.ToLower(req.Keyword)}},
-			bson.M{"username": bson.M{"$regex": req.Keyword}},
-			bson.M{"username": bson.M{"$regex": strings.ToLower(req.Keyword)}},
-		},
+		"$text": bson.M{"$search": req.Keyword},
 	}
 
 	cursor, err := collection.Find(mCtx, filter)
