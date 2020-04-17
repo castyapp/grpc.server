@@ -17,6 +17,10 @@ RUN mkdir /code
 # Adding project to work directory
 ADD . /code
 
+# Removing old JWT keys
+RUN rm -rf /code/jwt/keys/app.key\
+    /code/jwt/keys/app.key.pub
+
 # Generate jwt keys
 RUN cd /code/jwt/keys && ssh-keygen -t rsa -N '' -b 4096 -m PEM -f app.key &&\
     openssl rsa -in app.key -pubout -outform PEM -out app.key.pub;
