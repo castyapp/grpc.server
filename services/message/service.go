@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
-	"time"
 )
 
 type Service struct {}
@@ -81,9 +80,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		return failedResponse, errors.New("receiver can not be you")
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 10 * time.Second)
-
-	if err := usersCollection.FindOne(mCtx, bson.M{ "username": req.ReceiverId }).Decode(reciever); err != nil {
+	if err := usersCollection.FindOne(ctx, bson.M{ "username": req.ReceiverId }).Decode(reciever); err != nil {
 		return failedResponse, err
 	}
 
@@ -100,18 +97,18 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		},
 	}
 
-	cursor, err := collection.Find(mCtx, filter)
+	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		return failedResponse, err
 	}
 
 	var protoMessages []*proto.Message
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 		var message = new(models.Message)
 		if err := cursor.Decode(message); err != nil {
 			break
 		}
-		protoMessage, err := SetDbMessageToProtoMessage(mCtx, message)
+		protoMessage, err := SetDbMessageToProtoMessage(ctx, message)
 		if err != nil {
 			break
 		}

@@ -7,9 +7,11 @@ import (
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
-	"time"
 )
 
 func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.GetUserResponse, error) {
@@ -33,35 +35,35 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 		}, nil
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	filter := bson.M{"_id": user.ID}
 	setUpdate := bson.M{}
-
-	if req.Result.Avatar != "" && user.Avatar != req.Result.Avatar {
-		setUpdate["avatar"] = req.Result.Avatar
-	}
 
 	if req.Result.Fullname != "" && user.Fullname != req.Result.Fullname {
 		setUpdate["fullname"] = req.Result.Fullname
 	}
 
 	if len(setUpdate) == 0 {
+		protoUser, err := helpers.SetDBUserToProtoUser(user)
+		if err != nil {
+			sentry.CaptureException(err)
+			return nil, status.Error(codes.Internal, "Internal server error!")
+		}
 		return &proto.GetUserResponse{
-			Status:  "failed",
-			Code:    420,
-			Message: "Fields are required!",
+			Status:  "success",
+			Code:    http.StatusOK,
+			Message: "User updated successfully!",
+			Result:  protoUser,
 		}, nil
 	}
 
 	update := bson.M{"$set": setUpdate}
-	result, err := collection.UpdateOne(mCtx, filter, update)
+	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return failedResponse, nil
 	}
 
 	dbUpdatedUser := new(models.User)
-	if err := collection.FindOne(mCtx, filter).Decode(dbUpdatedUser); err != nil {
+	if err := collection.FindOne(ctx, filter).Decode(dbUpdatedUser); err != nil {
 		return failedResponse, nil
 	}
 

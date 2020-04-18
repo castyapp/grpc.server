@@ -16,7 +16,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"time"
 )
 
 type Service struct {}
@@ -44,7 +43,6 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 	var (
 		collection   = db.Connection.Collection("users")
 		user         = new(models.User)
-		mCtx, _      = context.WithTimeout(ctx, 10 * time.Second)
 		unauthorized = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
 
@@ -72,13 +70,13 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		filter = bson.M{ "email": req.User }
 	}
 
-	if err := collection.FindOne(mCtx, filter).Decode(&user); err != nil {
+	if err := collection.FindOne(ctx, filter).Decode(&user); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find user!")
 	}
 
 	if s.validatePassword(user, req.Pass) {
 
-		token, refreshedToken, err := jwt.CreateNewTokens(mCtx, user.ID.Hex())
+		token, refreshedToken, err := jwt.CreateNewTokens(ctx, user.ID.Hex())
 		if err != nil {
 			sentry.CaptureException(err)
 			return nil, status.Error(codes.Internal, "Could not create auth token, Please try again later!")

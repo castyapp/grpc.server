@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"time"
 )
 
 func SubtitleToProto(subtitle *models.Subtitle) (*proto.Subtitle, error) {
@@ -44,7 +43,6 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 			Code:    http.StatusBadRequest,
 			Message: "Could not get subtitles, Please try again later!",
 		}
-		mCtx, _ = context.WithTimeout(ctx, 10 * time.Second)
 	)
 
 	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
@@ -60,7 +58,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 		findFilter = bson.M{ "_id": theaterObjectID }
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(mCtx, findFilter).Decode(theater); err != nil {
+	if err := db.Connection.Collection("theaters").FindOne(ctx, findFilter).Decode(theater); err != nil {
 		return &proto.TheaterSubtitlesResponse{
 			Status:  "failed",
 			Code:    http.StatusNotFound,
@@ -68,12 +66,12 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 		}, nil
 	}
 
-	cursor, err := collection.Find(mCtx, bson.M{"theater_id": theaterObjectID})
+	cursor, err := collection.Find(ctx, bson.M{"theater_id": theaterObjectID})
 	if err != nil {
 		return failedResponse, nil
 	}
 
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 		subtitle := new(models.Subtitle)
 		if err := cursor.Decode(subtitle); err != nil {
 			continue
@@ -92,67 +90,8 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 	}, nil
 }
 
-// Add subtitle to theater
-func (s *Service) AddSubtitle(ctx context.Context, req *proto.AddOrRemoveSubtitleRequest) (*proto.Response, error) {
-
-	var (
-		theater        = new(models.Theater)
-		collection     = db.Connection.Collection("subtitles")
-		failedResponse = &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Could not add subtitle, Please try again later!",
-		}
-		mCtx, _ = context.WithTimeout(ctx, 10 * time.Second)
-	)
-
-	user, err := auth.Authenticate(req.AuthRequest)
-	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
-	}
-
-	var (
-		theaterObjectID, _ = primitive.ObjectIDFromHex(req.Subtitle.TheaterId)
-		findFilter = bson.M{
-			"_id": theaterObjectID,
-			"user_id": user.ID,
-		}
-	)
-
-	if err := db.Connection.Collection("theaters").FindOne(mCtx, findFilter).Decode(theater); err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusNotFound,
-			Message: "Could not find theater!",
-		}, nil
-	}
-
-	subtitle := bson.M{
-		"theater_id": theaterObjectID,
-		"lang": req.Subtitle.Lang,
-		"file": req.Subtitle.File,
-		"created_at": time.Now(),
-		"updated_at": time.Now(),
-	}
-
-	result, err := collection.InsertOne(mCtx, subtitle)
-	if err != nil || result.InsertedID == nil {
-		return failedResponse, err
-	}
-
-	return &proto.Response{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Message: "Subtitle added successfully!",
-	}, nil
-}
-
 // Remove subtitle from theater
-func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.AddOrRemoveSubtitleRequest) (*proto.Response, error) {
+func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleRequest) (*proto.Response, error) {
 
 	var (
 		theater        = new(models.Theater)
@@ -162,7 +101,6 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.AddOrRemoveSubt
 			Code:    http.StatusBadRequest,
 			Message: "Could not remove subtitle, Please try again later!",
 		}
-		mCtx, _ = context.WithTimeout(ctx, 10 * time.Second)
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
@@ -182,7 +120,7 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.AddOrRemoveSubt
 		}
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(mCtx, findFilter).Decode(theater); err != nil {
+	if err := db.Connection.Collection("theaters").FindOne(ctx, findFilter).Decode(theater); err != nil {
 		return &proto.Response{
 			Status:  "failed",
 			Code:    http.StatusNotFound,
@@ -198,7 +136,7 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.AddOrRemoveSubt
 		}
 	)
 
-	result, err := collection.DeleteOne(mCtx, filter)
+	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil || result.DeletedCount != 1 {
 		return failedResponse, err
 	}

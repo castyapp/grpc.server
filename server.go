@@ -8,6 +8,7 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/CastyLab/grpc.server/services/message"
 	"github.com/CastyLab/grpc.server/services/theater"
+	"github.com/CastyLab/grpc.server/services/upload"
 	"github.com/CastyLab/grpc.server/services/user"
 	"github.com/getsentry/sentry-go"
 	_ "github.com/joho/godotenv/autoload"
@@ -51,6 +52,8 @@ func main() {
 	proto.RegisterMessagesServiceServer(server, new(message.Service))
 
 	reflection.Register(server)
+
+	go upload.NewUploadService()
 
 	log.Println(fmt.Sprintf("Server running in tcp:%s:%d", *host, *port))
 	if err := server.Serve(listener); err != nil {

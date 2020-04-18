@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
-	"time"
 )
 
 func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUserTheatersRequest) (*proto.UserTheatersResponse, error) {
@@ -25,8 +24,6 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 		}, nil
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	filter := bson.M{
 		"to_user_id": authUser.ID,
 		"type": int32(proto.Notification_NEW_THEATER_INVITE),
@@ -37,7 +34,7 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 		{"created_at", -1},
 	})
 
-	cursor, err := db.Connection.Collection("notifications").Find(mCtx, filter, qOpts)
+	cursor, err := db.Connection.Collection("notifications").Find(ctx, filter, qOpts)
 	if err != nil {
 		sentry.CaptureException(err)
 		return &proto.UserTheatersResponse{
@@ -49,7 +46,7 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 
 	theaterIDs := make([]*primitive.ObjectID, 0)
 
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 		notification := new(models.Notification)
 		if err := cursor.Decode(&notification); err != nil {
 			continue
@@ -63,7 +60,7 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 		},
 	}
 
-	thCursor, err := db.Connection.Collection("theaters").Find(mCtx, findTheaters)
+	thCursor, err := db.Connection.Collection("theaters").Find(ctx, findTheaters)
 	if err != nil {
 		sentry.CaptureException(err)
 		return &proto.UserTheatersResponse{
@@ -75,12 +72,12 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 
 	theaters := make([]*proto.Theater, 0)
 
-	for thCursor.Next(mCtx) {
+	for thCursor.Next(ctx) {
 		theater := new(models.Theater)
 		if err := thCursor.Decode(theater); err != nil {
 			continue
 		}
-		th, err := SetDbTheaterToMessageTheater(mCtx, theater)
+		th, err := SetDbTheaterToMessageTheater(ctx, theater)
 		if err != nil {
 			continue
 		}

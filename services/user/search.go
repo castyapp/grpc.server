@@ -10,13 +10,11 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
-	"time"
 )
 
 func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*proto.SearchUserResponse,error) {
 
 	var (
-		mCtx, _ = context.WithTimeout(ctx, 20 * time.Second)
 		collection = db.Connection.Collection("users")
 		emptyResponse = &proto.SearchUserResponse{
 			Status:  "success",
@@ -43,13 +41,13 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		"$text": bson.M{"$search": req.Keyword},
 	}
 
-	cursor, err := collection.Find(mCtx, filter)
+	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		return emptyResponse, nil
 	}
 
 	var protoUsers []*proto.User
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 		var dbUser = new(models.User)
 		if err := cursor.Decode(dbUser); err != nil {
 			break

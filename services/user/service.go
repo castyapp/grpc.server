@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"time"
 )
 
 type Service struct {}
@@ -26,8 +25,6 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 		}, nil
 	}
 
-	mdCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	var (
 		filter = bson.M{"_id": user.ID}
 		update = bson.M{
@@ -37,7 +34,7 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 		}
 	)
 
-	if _, err := db.Connection.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
 		sentry.CaptureException(err)
 		return &proto.Response{
 			Status:  "failed",
@@ -64,8 +61,6 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 		}, nil
 	}
 
-	mdCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	activityObjectId, err := primitive.ObjectIDFromHex(req.Activity.Id)
 	if err != nil {
 
@@ -88,7 +83,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 		}
 	)
 
-	if _, err := db.Connection.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
 		sentry.CaptureException(err)
 		return &proto.Response{
 			Status:  "failed",
@@ -115,8 +110,6 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 		}, nil
 	}
 
-	mdCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	var (
 		filter = bson.M{"_id": user.ID}
 		update = bson.M{
@@ -126,7 +119,7 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 		}
 	)
 
-	if _, err := db.Connection.Collection("users").UpdateOne(mdCtx, filter, update); err != nil {
+	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
 		sentry.CaptureException(err)
 		return &proto.Response{
 			Status:  "failed",

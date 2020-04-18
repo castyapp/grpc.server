@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
-	"time"
 )
 
 type Service struct {}
@@ -72,14 +71,12 @@ func (s *Service) GetUserTheaters(ctx context.Context, req *proto.GetAllUserThea
 		}, nil
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	qOpts := options.Find()
 	qOpts.SetSort(bson.D{
 		{"created_at", -1},
 	})
 
-	cursor, err := collection.Find(mCtx, bson.M{"user_id": authUser.ID}, qOpts)
+	cursor, err := collection.Find(ctx, bson.M{"user_id": authUser.ID}, qOpts)
 	if err != nil {
 		sentry.CaptureException(err)
 		return &proto.UserTheatersResponse{
@@ -89,13 +86,13 @@ func (s *Service) GetUserTheaters(ctx context.Context, req *proto.GetAllUserThea
 		}, nil
 	}
 
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 		theater := new(models.Theater)
 		if err := cursor.Decode(theater); err != nil {
 			sentry.CaptureException(err)
 			break
 		}
-		th, err := SetDbTheaterToMessageTheater(mCtx, theater)
+		th, err := SetDbTheaterToMessageTheater(ctx, theater)
 		if err != nil {
 			break
 		}

@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"time"
 )
 
 func (s *Service) RemoveTheater(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
@@ -46,9 +45,7 @@ func (s *Service) RemoveTheater(ctx context.Context, req *proto.TheaterAuthReque
 		"user_id": user.ID,
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
-	result, err := collection.DeleteOne(mCtx, filter)
+	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return failedResponse, nil
 	}

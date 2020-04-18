@@ -40,10 +40,8 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 10 * time.Second)
-
-	_ = collection.FindOne(mCtx, bson.M{ "username": user.Username }).Decode(existsUser)
-	_ = collection.FindOne(mCtx, bson.M{ "email": user.Email }).Decode(existsUser)
+	_ = collection.FindOne(ctx, bson.M{ "username": user.Username }).Decode(existsUser)
+	_ = collection.FindOne(ctx, bson.M{ "email": user.Email }).Decode(existsUser)
 
 	if existsUser.Username == user.Username {
 		validationErrors = append(validationErrors, &any.Any{
@@ -86,14 +84,14 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		"updated_at": time.Now(),
 	}
 
-	result, err := collection.InsertOne(mCtx, dbUser)
+	result, err := collection.InsertOne(ctx, dbUser)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")
 	}
 
 	resultID := result.InsertedID.(primitive.ObjectID)
 
-	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(mCtx, resultID.Hex())
+	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(ctx, resultID.Hex())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")
 	}

@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"time"
 )
 
 func (s *Service) GetTheater(ctx context.Context, theater *proto.Theater) (*proto.UserTheaterResponse, error) {
@@ -39,14 +38,12 @@ func (s *Service) GetTheater(ctx context.Context, theater *proto.Theater) (*prot
 		},
 	}
 
-	mCtx, _ := context.WithTimeout(ctx, 20 * time.Second)
-
 	var dbTheater = new(models.Theater)
-	if err := collection.FindOne(mCtx, filter).Decode(dbTheater); err != nil {
+	if err := collection.FindOne(ctx, filter).Decode(dbTheater); err != nil {
 		return failedResponse, nil
 	}
 
-	theater, err := SetDbTheaterToMessageTheater(mCtx, dbTheater)
+	theater, err := SetDbTheaterToMessageTheater(ctx, dbTheater)
 	if err != nil {
 		return failedResponse, nil
 	}

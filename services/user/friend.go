@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"time"
 )
 
 func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*proto.FriendResponse, error) {
@@ -21,8 +20,6 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 
 		dbFriend           = new(models.Friend)
 		dbFriendUserObject = new(models.User)
-
-		mCtx, _  = context.WithTimeout(ctx, 20 * time.Second)
 
 		userCollection    = database.Collection("users")
 		friendsCollection = database.Collection("friends")
@@ -50,7 +47,7 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		findFriendFilter = bson.M{ "_id": friendObjectId }
 	}
 
-	if err := userCollection.FindOne(mCtx, findFriendFilter).Decode(dbFriendUserObject); err != nil {
+	if err := userCollection.FindOne(ctx, findFriendFilter).Decode(dbFriendUserObject); err != nil {
 		return failedResponse, nil
 	}
 
@@ -68,7 +65,7 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		},
 	}
 
-	if err := friendsCollection.FindOne(mCtx, filter).Decode(dbFriend); err != nil {
+	if err := friendsCollection.FindOne(ctx, filter).Decode(dbFriend); err != nil {
 		return failedResponse, nil
 	}
 
@@ -89,7 +86,6 @@ func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest
 	var (
 		database   = db.Connection
 		dbFriend   = new(models.Friend)
-		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
 		friendsCollection = database.Collection("friends")
 		failedResponse = &proto.Friend{}
 	)
@@ -103,7 +99,7 @@ func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest
 		return failedResponse, err
 	}
 
-	if err := friendsCollection.FindOne(mCtx, bson.M{ "_id": requestObjectId }).Decode(dbFriend); err != nil {
+	if err := friendsCollection.FindOne(ctx, bson.M{ "_id": requestObjectId }).Decode(dbFriend); err != nil {
 		return failedResponse, err
 	}
 

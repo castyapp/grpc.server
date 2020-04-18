@@ -22,7 +22,6 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	var (
 		user         = new(models.User)
 		collection   = db.Connection.Collection("users")
-		mCtx, _      = context.WithTimeout(ctx, 10 * time.Second)
 		unauthorized = &proto.AuthResponse{
 			Status:  "failed",
 			Code:    http.StatusUnauthorized,
@@ -56,7 +55,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 
 	var (
 		userObjectId string
-		cursor = collection.FindOne(mCtx, bson.M{ "email": oauthUser.GetEmailAddress() })
+		cursor = collection.FindOne(ctx, bson.M{ "email": oauthUser.GetEmailAddress() })
 	)
 
 	if err := cursor.Decode(&user); err != nil {
@@ -86,7 +85,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 			"updated_at": time.Now(),
 		}
 
-		result, err := collection.InsertOne(mCtx, dbUser)
+		result, err := collection.InsertOne(ctx, dbUser)
 		if err != nil {
 			return &proto.AuthResponse{
 				Status:  "failed",
@@ -101,7 +100,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		userObjectId = user.ID.Hex()
 	}
 
-	token, refreshedToken, err := jwt.CreateNewTokens(mCtx, userObjectId)
+	token, refreshedToken, err := jwt.CreateNewTokens(ctx, userObjectId)
 	if err != nil {
 		return unauthorized, nil
 	}

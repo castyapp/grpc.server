@@ -24,8 +24,10 @@ func SetDBNotificationToProto(notif *models.Notification) (*proto.Notification, 
 		createdAt, _ = ptypes.TimestampProto(notif.CreatedAt)
 		updatedAt, _ = ptypes.TimestampProto(notif.UpdatedAt)
 		fromUser     = new(models.User)
-		mCtx, _      = context.WithTimeout(context.Background(), 10*time.Second)
+		mCtx, cancel = context.WithTimeout(context.Background(), 10 * time.Second)
 	)
+
+	defer cancel()
 
 	cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{
 		"_id": notif.FromUserId,
@@ -89,7 +91,6 @@ type NotificationData struct {
 func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.NotificationResponse, error) {
 
 	var (
-		mCtx, _        = context.WithTimeout(ctx, 20*time.Second)
 		collection     = db.Connection.Collection("notifications")
 		failedResponse = &proto.NotificationResponse{
 			Status:  "failed",
@@ -147,7 +148,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		notification["extra"] = theaterObjectId
 	}
 
-	result, err := collection.InsertOne(mCtx, notification)
+	result, err := collection.InsertOne(ctx, notification)
 	if err != nil {
 		return failedResponse, nil
 	}
@@ -181,8 +182,6 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		notifications []*proto.Notification
 
 		database = db.Connection
-		mCtx, _  = context.WithTimeout(ctx, 20*time.Second)
-
 		notificationCollection = database.Collection("notifications")
 
 		failedResponse = &proto.NotificationResponse{
@@ -208,14 +207,14 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		{"created_at", -1},
 	})
 
-	cursor, err := notificationCollection.Find(mCtx, bson.M{"to_user_id": user.ID}, qOpts)
+	cursor, err := notificationCollection.Find(ctx, bson.M{"to_user_id": user.ID}, qOpts)
 	if err != nil {
 		return failedResponse, nil
 	}
 
 	var unreadCount int64 = 0
 
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 
 		notification := new(models.Notification)
 		if err := cursor.Decode(notification); err != nil {
@@ -245,7 +244,6 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
 	var (
-		mCtx, _                = context.WithTimeout(ctx, 10 * time.Second)
 		notificationCollection = db.Connection.Collection("notifications")
 		failedResponse         = &proto.NotificationResponse{
 			Status:      "failed",
@@ -277,7 +275,7 @@ func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.Authentic
 		}
 	)
 
-	if _, err := notificationCollection.UpdateMany(mCtx, filter, update); err != nil {
+	if _, err := notificationCollection.UpdateMany(ctx, filter, update); err != nil {
 		return failedResponse, nil
 	}
 

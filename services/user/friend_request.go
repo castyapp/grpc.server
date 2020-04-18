@@ -18,7 +18,6 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	var (
 		database   = db.Connection
-		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
 
 		friendRequest = new(models.Friend)
 		friendsCollection = database.Collection("friends")
@@ -53,7 +52,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		},
 	}
 
-	if err := friendsCollection.FindOne(mCtx, filter).Decode(&friendRequest); err != nil {
+	if err := friendsCollection.FindOne(ctx, filter).Decode(&friendRequest); err != nil {
 		return &proto.Response{
 			Status:  "failed",
 			Code:    http.StatusNotFound,
@@ -75,7 +74,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	}
 
 	// update user's notification to read
-	_, _ = notifsCollection.UpdateOne(mCtx, findNotif, bson.M{
+	_, _ = notifsCollection.UpdateOne(ctx, findNotif, bson.M{
 		"$set": bson.M{
 			"read": true,
 			"updated_at": time.Now(),
@@ -94,7 +93,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		}
 	)
 
-	updateResult, err := friendsCollection.UpdateOne(mCtx, updateFilter, update)
+	updateResult, err := friendsCollection.UpdateOne(ctx, updateFilter, update)
 	if err != nil {
 		return failedResponse, nil
 	}
@@ -124,7 +123,6 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	var (
 		database   = db.Connection
 		friend     = new(models.User)
-		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
 
 		userCollection    = database.Collection("users")
 		friendsCollection = database.Collection("friends")
@@ -170,7 +168,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		}
 	)
 
-	alreadyFriendsCount, err := friendsCollection.CountDocuments(mCtx, filterFr)
+	alreadyFriendsCount, err := friendsCollection.CountDocuments(ctx, filterFr)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +181,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		}, nil
 	}
 
-	if err := userCollection.FindOne(mCtx, bson.M{"_id": friendObjectId}).Decode(friend); err != nil {
+	if err := userCollection.FindOne(ctx, bson.M{"_id": friendObjectId}).Decode(friend); err != nil {
 		return failedResponse, nil
 	}
 
@@ -193,7 +191,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		"accepted":  false,
 	}
 
-	friendrequestInsertData, err := friendsCollection.InsertOne(mCtx, friendRequest)
+	friendrequestInsertData, err := friendsCollection.InsertOne(ctx, friendRequest)
 	if err != nil {
 		return failedResponse, nil
 	}
@@ -211,7 +209,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		"updated_at":   time.Now(),
 	}
 
-	if _, err := notificationsCollection.InsertOne(mCtx, notification); err != nil {
+	if _, err := notificationsCollection.InsertOne(ctx, notification); err != nil {
 		return failedResponse, nil
 	}
 

@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"net/http"
-	"time"
 )
 
 func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest) (*proto.FriendsResponse, error) {
@@ -19,7 +18,6 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 		friends []*proto.User
 
 		database   = db.Connection
-		mCtx, _    = context.WithTimeout(ctx, 20 * time.Second)
 
 		userCollection    = database.Collection("users")
 		friendsCollection = database.Collection("friends")
@@ -49,13 +47,13 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 		},
 	}
 
-	cursor, err := friendsCollection.Find(mCtx, filter)
+	cursor, err := friendsCollection.Find(ctx, filter)
 	if err != nil {
 		log.Println(err)
 		return failedResponse, nil
 	}
 
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 
 		var friend = new(models.Friend)
 		if err := cursor.Decode(friend); err != nil {
@@ -68,7 +66,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 		}
 
 		friendUserObject := new(models.User)
-		if err := userCollection.FindOne(mCtx, filter).Decode(friendUserObject); err != nil {
+		if err := userCollection.FindOne(ctx, filter).Decode(friendUserObject); err != nil {
 			continue
 		}
 

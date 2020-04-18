@@ -31,7 +31,6 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		}
 
 		theater = new(models.Theater)
-		mCtx, _ = context.WithTimeout(ctx, 10 * time.Second)
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
@@ -48,7 +47,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		return emptyResponse, err
 	}
 
-	if err := collection.FindOne(mCtx, bson.M{ "_id": theaterID }).Decode(&theater); err != nil {
+	if err := collection.FindOne(ctx, bson.M{ "_id": theaterID }).Decode(&theater); err != nil {
 		return &proto.Response{
 			Status:  "failed",
 			Code:    http.StatusNotFound,
@@ -76,12 +75,12 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		}, nil
 	}
 
-	cursor, err := usersCollection.Find(mCtx, bson.M{"_id": bson.M{"$in": fids}})
+	cursor, err := usersCollection.Find(ctx, bson.M{"_id": bson.M{"$in": fids}})
 	if err != nil {
 		return emptyResponse, err
 	}
 
-	for cursor.Next(mCtx) {
+	for cursor.Next(ctx) {
 		var user = new(models.User)
 		if err := cursor.Decode(&user); err != nil {
 			continue
@@ -105,7 +104,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		})
 	}
 
-	if _, err := notificationsCollections.InsertMany(mCtx, notifications); err != nil {
+	if _, err := notificationsCollections.InsertMany(ctx, notifications); err != nil {
 		return emptyResponse, nil
 	}
 
