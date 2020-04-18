@@ -101,7 +101,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		userObjectId = user.ID.Hex()
 	}
 
-	token, refreshedToken, err := jwt.CreateNewTokens(userObjectId)
+	token, refreshedToken, err := jwt.CreateNewTokens(mCtx, userObjectId)
 	if err != nil {
 		return unauthorized, nil
 	}

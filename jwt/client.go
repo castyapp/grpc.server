@@ -69,7 +69,7 @@ func init() {
 	}
 }
 
-func CreateNewTokens(userid string) (token, refreshedToken string, err error) {
+func CreateNewTokens(ctx context.Context, userid string) (token, refreshedToken string, err error) {
 
 	//generate the auth token
 	token, err = createAuthToken(userid)
@@ -78,7 +78,7 @@ func CreateNewTokens(userid string) (token, refreshedToken string, err error) {
 	}
 
 	// generate the refresh token
-	refreshedToken, err = createRefreshToken(userid)
+	refreshedToken, err = createRefreshToken(ctx, userid)
 	if err != nil {
 		return
 	}
@@ -103,7 +103,7 @@ func createAuthToken(userid string) (token string, err error) {
 	return
 }
 
-func createRefreshToken(userid string) (refreshTokenString string, err error) {
+func createRefreshToken(ctx context.Context, userid string) (refreshTokenString string, err error) {
 
 	var userObjectId primitive.ObjectID
 	userObjectId, err = primitive.ObjectIDFromHex(userid)
@@ -114,7 +114,6 @@ func createRefreshToken(userid string) (refreshTokenString string, err error) {
 	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeRefreshedTokenInt))
 
 	var result *mongo.InsertOneResult
-	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
 	result, err = collection.InsertOne(ctx, bson.M{
 		"user_id": userObjectId,
 		"valid": true,
@@ -140,7 +139,7 @@ func createRefreshToken(userid string) (refreshTokenString string, err error) {
 	return
 }
 
-func checkRefreshToken(id string) (*models.RefreshedToken, error) {
+func checkRefreshToken(ctx context.Context, id string) (*models.RefreshedToken, error) {
 
 	refreshedToken := new(models.RefreshedToken)
 
@@ -149,7 +148,6 @@ func checkRefreshToken(id string) (*models.RefreshedToken, error) {
 		return nil, err
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
 	err = collection.FindOne(ctx, bson.M{ "_id": refreshedTokenObjectId}).Decode(refreshedToken)
 	if err != nil {
 		return nil, err
@@ -162,7 +160,7 @@ func checkRefreshToken(id string) (*models.RefreshedToken, error) {
 	return nil, errors.New("could not find refreshed token or maybe expired")
 }
 
-func RefreshToken(refreshTokenString string) (token, refreshedToken string, err error) {
+func RefreshToken(ctx context.Context, refreshTokenString string) (token, refreshedToken string, err error) {
 
 	var refreshToken *jwt.Token
 	refreshToken, err = jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -188,14 +186,14 @@ func RefreshToken(refreshTokenString string) (token, refreshedToken string, err 
 			return
 		}
 
-		if err = deleteRefreshToken(refreshedTokenObjectId); err != nil {
+		if err = deleteRefreshToken(ctx, refreshedTokenObjectId); err != nil {
 			return
 		}
 
 		return
 	}
 
-	dbRefreshedToken, rErr := checkRefreshToken(refreshTokenClaims.Id)
+	dbRefreshedToken, rErr := checkRefreshToken(ctx, refreshTokenClaims.Id)
 	if rErr != nil {
 		err = errors.New("could not decode refresh token or maybe token expired")
 		return
@@ -203,11 +201,11 @@ func RefreshToken(refreshTokenString string) (token, refreshedToken string, err 
 
 	if refreshToken.Valid {
 
-		if err = deleteRefreshToken(*dbRefreshedToken.ID); err != nil {
+		if err = deleteRefreshToken(ctx, *dbRefreshedToken.ID); err != nil {
 			return
 		}
 
-		token, refreshedToken, err = CreateNewTokens(dbRefreshedToken.UserId.Hex())
+		token, refreshedToken, err = CreateNewTokens(ctx, dbRefreshedToken.UserId.Hex())
 		return
 	}
 
@@ -215,9 +213,7 @@ func RefreshToken(refreshTokenString string) (token, refreshedToken string, err 
 	return
 }
 
-func deleteRefreshToken(jti primitive.ObjectID) (err error) {
-
-	ctx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
+func deleteRefreshToken(ctx context.Context, jti primitive.ObjectID) (err error) {
 
 	var result *mongo.DeleteResult
 	result, err = collection.DeleteOne(ctx, bson.M{ "_id": jti })

@@ -2,25 +2,23 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/jwt"
+	"github.com/getsentry/sentry-go"
+	"github.com/pkg/errors"
 	"net/http"
 )
 
 func (s *Service) RefreshToken(ctx context.Context, req *proto.RefreshTokenRequest) (*proto.AuthResponse, error) {
 
 	if req.RefreshedToken == nil {
-		return nil, errors.New("refreshed token is required")
+		return nil, errors.New("Refreshed token is required!")
 	}
 
-	newAuthToken, newRefreshedToken, err := jwt.RefreshToken(string(req.RefreshedToken))
+	newAuthToken, newRefreshedToken, err := jwt.RefreshToken(ctx, string(req.RefreshedToken))
 	if err != nil {
-		return &proto.AuthResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, err
+		sentry.CaptureException(err)
+		return nil, errors.New("Could not create tokens, please try again later!")
 	}
 
 	return &proto.AuthResponse{

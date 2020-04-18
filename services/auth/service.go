@@ -5,10 +5,15 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 	"regexp"
 	"time"
@@ -39,41 +44,44 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 	var (
 		collection   = db.Connection.Collection("users")
 		user         = new(models.User)
-		mCtx, _      = context.WithTimeout(ctx, 20 * time.Second)
-		unauthorized = &proto.AuthResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}
+		mCtx, _      = context.WithTimeout(ctx, 10 * time.Second)
+		unauthorized = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
 
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
+	}
+
+	recaptcha := md.Get("g-recaptcha-response")
+	if success, err := helpers.VerifyRecaptcha(recaptcha[0]); err != nil || !success {
+		log.Println(req, err)
+		return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
+	}
+
 	if req.User == "" {
-		return unauthorized, nil
+		return nil, unauthorized
 	}
 
 	if req.Pass == "" {
-		return &proto.AuthResponse{
-			Status:  "failed",
-			Code:    420,
-			Message: "pass field is required",
-		}, nil
+		return nil, unauthorized
 	}
 
-	var filter = bson.M{ "username": req.User }
+	filter := bson.M{ "username": req.User }
 	if s.isEmail(req.User) {
 		filter = bson.M{ "email": req.User }
 	}
 
 	if err := collection.FindOne(mCtx, filter).Decode(&user); err != nil {
-		sentry.CaptureException(err)
-		return unauthorized, nil
+		return nil, status.Error(codes.NotFound, "Could not find user!")
 	}
 
 	if s.validatePassword(user, req.Pass) {
 
-		token, refreshedToken, err := jwt.CreateNewTokens(user.ID.Hex())
+		token, refreshedToken, err := jwt.CreateNewTokens(mCtx, user.ID.Hex())
 		if err != nil {
-			return unauthorized, err
+			sentry.CaptureException(err)
+			return nil, status.Error(codes.Internal, "Could not create auth token, Please try again later!")
 		}
 
 		return &proto.AuthResponse{
@@ -84,6 +92,6 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		}, nil
 	}
 
-	return unauthorized, nil
+	return nil, unauthorized
 }
 
