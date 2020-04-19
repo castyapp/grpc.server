@@ -12,6 +12,8 @@ import (
 	"github.com/CastyLab/grpc.server/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"net/http"
 	"time"
@@ -22,11 +24,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	var (
 		user         = new(models.User)
 		collection   = db.Connection.Collection("users")
-		unauthorized = &proto.AuthResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}
+		unauthorized = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
 
 	var oauthUser oauth.User
@@ -34,28 +32,30 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	case proto.OAUTHRequest_Google:
 		token, err := google.Authenticate(req.Code)
 		if err != nil {
-			return unauthorized, nil
+			return nil, unauthorized
 		}
 		oauthUser, err = google.GetUserByToken(token)
 		if err != nil {
-			return unauthorized, nil
+			return nil, unauthorized
 		}
 	case proto.OAUTHRequest_Discord:
 		token, err := discord.Authenticate(req.Code)
 		if err != nil {
-			return unauthorized, nil
+			return nil, unauthorized
 		}
 		oauthUser, err = discord.GetUserByToken(token)
 		if err != nil {
-			return unauthorized, nil
+			return nil, unauthorized
 		}
 	default:
-		return unauthorized, nil
+		return nil, unauthorized
 	}
 
 	var (
 		userObjectId string
-		cursor = collection.FindOne(ctx, bson.M{ "email": oauthUser.GetEmailAddress() })
+		cursor = collection.FindOne(ctx, bson.M{
+			"email": oauthUser.GetEmailAddress(),
+		})
 	)
 
 	if err := cursor.Decode(&user); err != nil {
@@ -87,11 +87,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 
 		result, err := collection.InsertOne(ctx, dbUser)
 		if err != nil {
-			return &proto.AuthResponse{
-				Status:  "failed",
-				Message: "Could not create the user, Please try again later!",
-				Code:    http.StatusInternalServerError,
-			}, nil
+			return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")
 		}
 		userObjectId = result.InsertedID.(primitive.ObjectID).Hex()
 	}
@@ -102,7 +98,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 
 	token, refreshedToken, err := jwt.CreateNewTokens(ctx, userObjectId)
 	if err != nil {
-		return unauthorized, nil
+		return nil, unauthorized
 	}
 
 	return &proto.AuthResponse{

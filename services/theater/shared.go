@@ -5,23 +5,23 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
 func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUserTheatersRequest) (*proto.UserTheatersResponse, error) {
 
+	failedErr := status.Error(codes.Internal, "Could not get shared theaters, please try again later!")
+
 	authUser, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.UserTheatersResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	filter := bson.M{
@@ -36,12 +36,7 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 
 	cursor, err := db.Connection.Collection("notifications").Find(ctx, filter, qOpts)
 	if err != nil {
-		sentry.CaptureException(err)
-		return &proto.UserTheatersResponse{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Could not get any theaters, please try again later!",
-		}, nil
+		return nil, failedErr
 	}
 
 	theaterIDs := make([]*primitive.ObjectID, 0)
@@ -62,12 +57,7 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 
 	thCursor, err := db.Connection.Collection("theaters").Find(ctx, findTheaters)
 	if err != nil {
-		sentry.CaptureException(err)
-		return &proto.UserTheatersResponse{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Could not get any theaters, please try again later!",
-		}, nil
+		return nil, failedErr
 	}
 
 	theaters := make([]*proto.Theater, 0)
@@ -77,7 +67,7 @@ func (*Service) GetUserSharedTheaters(ctx context.Context, req *proto.GetAllUser
 		if err := thCursor.Decode(theater); err != nil {
 			continue
 		}
-		th, err := SetDbTheaterToMessageTheater(ctx, theater)
+		th, err := helpers.NewTheaterProto(ctx, theater)
 		if err != nil {
 			continue
 		}

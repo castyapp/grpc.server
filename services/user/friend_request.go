@@ -7,9 +7,11 @@ import (
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
 )
@@ -17,31 +19,20 @@ import (
 func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Response, error) {
 
 	var (
-		database   = db.Connection
-
-		friendRequest = new(models.Friend)
-		friendsCollection = database.Collection("friends")
-		notifsCollection = database.Collection("notifications")
-
-		failedResponse = &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not accept friend request, Please try again later!",
-		}
+		friendRequest     = new(models.Friend)
+		friendsCollection = db.Connection.Collection("friends")
+		notifsCollection  = db.Connection.Collection("notifications")
+		failedResponse    = status.Error(codes.Internal, "Could not accept friend request, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	frObjectID, err := primitive.ObjectIDFromHex(req.RequestId)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	filter := bson.M{
@@ -53,19 +44,11 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	}
 
 	if err := friendsCollection.FindOne(ctx, filter).Decode(&friendRequest); err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusNotFound,
-			Message: "Could not find friend request!",
-		}, nil
+		return nil, status.Error(codes.NotFound, "Could not find friend request!")
 	}
 
 	if friendRequest.Accepted {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Friend request is not valid anymore!",
-		}, nil
+		return nil, status.Error(codes.InvalidArgument, "Friend request is not valid anymore!")
 	}
 
 	findNotif := bson.M{
@@ -95,7 +78,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	updateResult, err := friendsCollection.UpdateOne(ctx, updateFilter, update)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	if updateResult.ModifiedCount == 1 {
@@ -115,42 +98,28 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		}, nil
 	}
 
-	return failedResponse, nil
+	return nil, failedResponse
 }
 
 func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Response, error) {
 
 	var (
-		database   = db.Connection
-		friend     = new(models.User)
-
-		userCollection    = database.Collection("users")
-		friendsCollection = database.Collection("friends")
+		database                = db.Connection
+		friend                  = new(models.User)
+		userCollection          = database.Collection("users")
+		friendsCollection       = database.Collection("friends")
 		notificationsCollection = database.Collection("notifications")
-
-		failedResponse = &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not create friend request, Please try again later!",
-		}
+		failedResponse          = status.Error(codes.Internal, "Could not create friend request, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	friendObjectId, err := primitive.ObjectIDFromHex(req.FriendId)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Invalid friend id!",
-		}, nil
+		return nil, status.Error(codes.InvalidArgument, "Invalid friend id!")
 	}
 
 	var (
@@ -170,19 +139,15 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 
 	alreadyFriendsCount, err := friendsCollection.CountDocuments(ctx, filterFr)
 	if err != nil {
-		return nil, err
+		return nil, failedResponse
 	}
 
 	if alreadyFriendsCount != 0 {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    409,
-			Message: "Friend request sent already!",
-		}, nil
+		return nil, status.Error(codes.Aborted, "Friend request sent already!")
 	}
 
 	if err := userCollection.FindOne(ctx, bson.M{"_id": friendObjectId}).Decode(friend); err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	friendRequest := bson.M{
@@ -193,7 +158,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 
 	friendrequestInsertData, err := friendsCollection.InsertOne(ctx, friendRequest)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	frInsertID := friendrequestInsertData.InsertedID.(primitive.ObjectID)
@@ -210,13 +175,13 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	}
 
 	if _, err := notificationsCollection.InsertOne(ctx, notification); err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	// send new friend request event to friend websocket clients
 	err = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
 	if err != nil {
-		log.Println(err)
+		sentry.CaptureException(err)
 	}
 
 	return &proto.Response{

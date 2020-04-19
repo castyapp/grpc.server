@@ -10,6 +10,8 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
 )
@@ -20,28 +22,20 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.CreateMessageReq
 		reciever         = new(models.User)
 		collection       = db.Connection.Collection("messages")
 		usersCollection  = db.Connection.Collection("users")
-		failedResponse   = &proto.CreateMessageResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not create message, Please try again later!",
-		}
+		failedResponse   = status.Error(codes.Internal, "Could not create message, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.CreateMessageResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, err
+		return nil, err
 	}
 
 	if user.Username == req.RecieverId {
-		return failedResponse, errors.New("receiver can not be you")
+		return nil, errors.New("receiver can not be you")
 	}
 
 	if err := usersCollection.FindOne(ctx, bson.M{ "username": req.RecieverId }).Decode(reciever); err != nil {
-		return failedResponse, err
+		return nil, status.Error(codes.NotFound, "Could not find reciever!")
 	}
 
 	message := bson.M{
@@ -55,11 +49,11 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.CreateMessageReq
 	}
 
 	if _, err := collection.InsertOne(ctx, message); err != nil {
-		return failedResponse, err
+		return nil, failedResponse
 	}
 
-	protoUser, _ := helpers.SetDBUserToProtoUser(user)
-	protoReciever, _ := helpers.SetDBUserToProtoUser(reciever)
+	protoUser, _ := helpers.NewProtoUser(user)
+	protoReciever, _ := helpers.NewProtoUser(reciever)
 	nowTime, _ := ptypes.TimestampProto(time.Now())
 
 	return &proto.CreateMessageResponse{

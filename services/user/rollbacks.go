@@ -11,28 +11,22 @@ import (
 func (s *Service) RollbackStates(ctx context.Context, req *proto.RollbackStatesRequest) (*proto.Response, error) {
 
 	var (
-		database = db.Connection
-		collection = database.Collection("users")
+		collection = db.Connection.Collection("users")
+		update = bson.M{
+			"$set": bson.M{
+				"state": int(proto.PERSONAL_STATE_OFFLINE),
+			},
+		}
+		// filter non online users
+		filter = bson.M{
+			"state": bson.M{
+				"$ne": int(proto.PERSONAL_STATE_OFFLINE),
+			},
+		}
 	)
 
-	update := bson.M{
-		"$set": bson.M{
-			"state": int(proto.PERSONAL_STATE_OFFLINE),
-		},
-	}
-
-	// filter non online users
-	filter := bson.M{
-		"state": bson.M{
-			"$ne": int(proto.PERSONAL_STATE_OFFLINE),
-		},
-	}
-
 	if _, err := collection.UpdateMany(ctx, filter, update); err != nil {
-		return &proto.Response{
-			Status: "Failed",
-			Code: http.StatusInternalServerError,
-		}, err
+		return nil, err
 	}
 
 	return &proto.Response{

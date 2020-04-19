@@ -7,9 +7,11 @@ import (
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
 )
@@ -17,20 +19,13 @@ import (
 func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterRequest) (*proto.Response, error) {
 
 	var (
-		database = db.Connection
-		friends     = make([]*models.User, 0)
-
-		collection  = database.Collection("theaters")
-		usersCollection = database.Collection("users")
-		notificationsCollections = database.Collection("notifications")
-
-		emptyResponse   = &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not send invitations, Please tray again later!",
-		}
-
-		theater = new(models.Theater)
+		theater           = new(models.Theater)
+		database          = db.Connection
+		friends           = make([]*models.User, 0)
+		collection        = database.Collection("theaters")
+		usersCollection   = database.Collection("users")
+		notifsCollections = database.Collection("notifications")
+		emptyResponse     = status.Error(codes.Internal, "Could not send invitations, Please tray again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
@@ -44,15 +39,11 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	theaterID, err := primitive.ObjectIDFromHex(req.TheaterId)
 	if err != nil {
-		return emptyResponse, err
+		return nil, emptyResponse
 	}
 
 	if err := collection.FindOne(ctx, bson.M{ "_id": theaterID }).Decode(&theater); err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusNotFound,
-			Message: "Could not find theater!",
-		}, err
+		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
 	fids := make([]primitive.ObjectID, 0)
@@ -77,7 +68,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	cursor, err := usersCollection.Find(ctx, bson.M{"_id": bson.M{"$in": fids}})
 	if err != nil {
-		return emptyResponse, err
+		return nil, emptyResponse
 	}
 
 	for cursor.Next(ctx) {
@@ -104,15 +95,15 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		})
 	}
 
-	if _, err := notificationsCollections.InsertMany(ctx, notifications); err != nil {
-		return emptyResponse, nil
+	if _, err := notifsCollections.InsertMany(ctx, notifications); err != nil {
+		return nil, emptyResponse
 	}
 
 	for _, friend := range friends {
 		// send a new notification event to friend
 		err := internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
 		if err != nil {
-			log.Println(err)
+			sentry.CaptureException(err)
 		}
 	}
 

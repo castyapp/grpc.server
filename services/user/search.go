@@ -2,13 +2,14 @@ package user
 
 import (
 	"context"
-	"errors"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
@@ -25,15 +26,11 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.SearchUserResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	if req.Keyword == "" {
-		return nil, errors.New("keyword is required")
+		return nil, status.Error(codes.InvalidArgument, "keyword is required")
 	}
 
 	filter := bson.M{
@@ -50,11 +47,11 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 	for cursor.Next(ctx) {
 		var dbUser = new(models.User)
 		if err := cursor.Decode(dbUser); err != nil {
-			break
+			continue
 		}
-		protoUser, err := helpers.SetDBUserToProtoUser(dbUser)
+		protoUser, err := helpers.NewProtoUser(dbUser)
 		if err != nil {
-			break
+			continue
 		}
 		protoUsers = append(protoUsers, protoUser)
 	}

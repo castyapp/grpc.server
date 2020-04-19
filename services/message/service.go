@@ -8,51 +8,13 @@ import (
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
 type Service struct {}
-
-func SetDbMessageToProtoMessage(ctx context.Context, message *models.Message) (*proto.Message, error) {
-
-	var (
-		dbSender   = new(models.User)
-		collection = db.Connection.Collection("users")
-	)
-
-	if err := collection.FindOne(ctx, bson.M{ "_id": message.SenderId }).Decode(dbSender); err != nil {
-		return nil, err
-	}
-
-	sender, err := helpers.SetDBUserToProtoUser(dbSender)
-	if err != nil {
-		return nil, err
-	}
-
-	createdAt, _ := ptypes.TimestampProto(message.CreatedAt)
-	updatedAt, _ := ptypes.TimestampProto(message.UpdatedAt)
-
-	protoMessage := &proto.Message{
-		Id:       message.ID.Hex(),
-		Content:  message.Content,
-		Sender:   sender,
-		Edited:   message.Edited,
-		Deleted:  message.Deleted,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-	}
-
-	if message.DeletedAt.Unix() != 0 {
-		protoMessage.DeletedAt, err = ptypes.TimestampProto(message.DeletedAt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return protoMessage, nil
-}
 
 func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesRequest) (*proto.GetMessagesResponse, error) {
 
@@ -60,28 +22,20 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		reciever         = new(models.User)
 		collection       = db.Connection.Collection("messages")
 		usersCollection  = db.Connection.Collection("users")
-		failedResponse   = &proto.GetMessagesResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not create message, Please try again later!",
-		}
+		failedResponse   = status.Error(codes.Internal, "Could not get messages, Please try again later!")
 	)
 
 	u, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.GetMessagesResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, err
+		return nil, err
 	}
 
 	if u.Username == req.ReceiverId {
-		return failedResponse, errors.New("receiver can not be you")
+		return nil, errors.New("receiver can not be you")
 	}
 
 	if err := usersCollection.FindOne(ctx, bson.M{ "username": req.ReceiverId }).Decode(reciever); err != nil {
-		return failedResponse, err
+		return nil, status.Error(codes.NotFound, "Could not find receiver!")
 	}
 
 	filter := bson.M{
@@ -99,18 +53,18 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
-		return failedResponse, err
+		return nil, failedResponse
 	}
 
 	var protoMessages []*proto.Message
 	for cursor.Next(ctx) {
 		var message = new(models.Message)
 		if err := cursor.Decode(message); err != nil {
-			break
+			continue
 		}
-		protoMessage, err := SetDbMessageToProtoMessage(ctx, message)
+		protoMessage, err := helpers.NewProtoMessage(ctx, message)
 		if err != nil {
-			break
+			continue
 		}
 		protoMessages = append(protoMessages, protoMessage)
 	}

@@ -9,6 +9,8 @@ import (
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
@@ -18,11 +20,7 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 
 	user, err := auth.Authenticate(req)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	var (
@@ -36,11 +34,7 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 
 	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
 		sentry.CaptureException(err)
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "The requested parameter is not updated!",
-		}, nil
+		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
 	}
 
 	return &proto.Response{
@@ -54,21 +48,12 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	activityObjectId, err := primitive.ObjectIDFromHex(req.Activity.Id)
 	if err != nil {
-
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusNotAcceptable,
-			Message: "Activity id is invalid!",
-		}, nil
+		return nil, status.Error(codes.InvalidArgument, "Activity id is invalid!")
 	}
 
 	var (
@@ -85,11 +70,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 
 	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
 		sentry.CaptureException(err)
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "The requested parameter is not updated!",
-		}, nil
+		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
 	}
 
 	return &proto.Response{
@@ -103,11 +84,7 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	var (
@@ -121,11 +98,7 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 
 	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
 		sentry.CaptureException(err)
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "The requested parameter is not updated!",
-		}, nil
+		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
 	}
 
 	return &proto.Response{
@@ -142,14 +115,10 @@ func (s *Service) GetUser(ctx context.Context, req *proto.AuthenticateRequest) (
 		return nil, err
 	}
 
-	protoUser, err := helpers.SetDBUserToProtoUser(user)
+	protoUser, err := helpers.NewProtoUser(user)
 	if err != nil {
 		sentry.CaptureException(err)
-		return &proto.GetUserResponse{
-			Message: "Could not decode user!",
-			Status: "failed",
-			Code:   http.StatusInternalServerError,
-		}, nil
+		return nil, status.Error(codes.Internal, "Could not decode user!")
 	}
 
 	return &proto.GetUserResponse{

@@ -5,8 +5,11 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
@@ -14,19 +17,11 @@ func (s *Service) GetTheater(ctx context.Context, theater *proto.Theater) (*prot
 
 	var (
 		collection     = db.Connection.Collection("theaters")
-		failedResponse = &proto.UserTheaterResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not get theater, Please try again later!",
-		}
+		failedResponse = status.Error(codes.Internal, "Could not get theater, Please try again later!")
 	)
 
 	if theater.Id == "" {
-		return &proto.UserTheaterResponse{
-			Status:  "failed",
-			Code:    420,
-			Message: "Validation error, TheaterId is required!",
-		}, nil
+		return nil, status.Error(codes.InvalidArgument, "TheaterId is required")
 	}
 
 	objectId, _ := primitive.ObjectIDFromHex(theater.Id)
@@ -40,12 +35,12 @@ func (s *Service) GetTheater(ctx context.Context, theater *proto.Theater) (*prot
 
 	var dbTheater = new(models.Theater)
 	if err := collection.FindOne(ctx, filter).Decode(dbTheater); err != nil {
-		return failedResponse, nil
+		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
-	theater, err := SetDbTheaterToMessageTheater(ctx, dbTheater)
+	theater, err := helpers.NewTheaterProto(ctx, dbTheater)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	return &proto.UserTheaterResponse{

@@ -5,31 +5,14 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
-
-func SubtitleToProto(subtitle *models.Subtitle) (*proto.Subtitle, error) {
-	createdAt, err := ptypes.TimestampProto(subtitle.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	updatedAt, err := ptypes.TimestampProto(subtitle.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &proto.Subtitle{
-		Id: subtitle.ID.Hex(),
-		Lang: subtitle.Lang,
-		TheaterId: subtitle.TheaterId.Hex(),
-		File: subtitle.File,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-	}, nil
-}
 
 // Get all subtitles from theater
 func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.TheaterSubtitlesResponse, error) {
@@ -38,19 +21,11 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 		theater        = new(models.Theater)
 		subtitles      = make([]*proto.Subtitle, 0)
 		collection     = db.Connection.Collection("subtitles")
-		failedResponse = &proto.TheaterSubtitlesResponse{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Could not get subtitles, Please try again later!",
-		}
+		failedResponse = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
 	)
 
 	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
-		return &proto.TheaterSubtitlesResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	var (
@@ -59,16 +34,12 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 	)
 
 	if err := db.Connection.Collection("theaters").FindOne(ctx, findFilter).Decode(theater); err != nil {
-		return &proto.TheaterSubtitlesResponse{
-			Status:  "failed",
-			Code:    http.StatusNotFound,
-			Message: "Could not find theater!",
-		}, nil
+		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
 	cursor, err := collection.Find(ctx, bson.M{"theater_id": theaterObjectID})
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	for cursor.Next(ctx) {
@@ -76,7 +47,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 		if err := cursor.Decode(subtitle); err != nil {
 			continue
 		}
-		protoMsg, err := SubtitleToProto(subtitle)
+		protoMsg, err := helpers.NewSubtitleProto(subtitle)
 		if err != nil {
 			continue
 		}
@@ -96,20 +67,12 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleR
 	var (
 		theater        = new(models.Theater)
 		collection     = db.Connection.Collection("subtitles")
-		failedResponse = &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Could not remove subtitle, Please try again later!",
-		}
+		failedResponse = status.Error(codes.Internal, "Could not remove subtitle, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	var (
@@ -121,11 +84,7 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleR
 	)
 
 	if err := db.Connection.Collection("theaters").FindOne(ctx, findFilter).Decode(theater); err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusNotFound,
-			Message: "Could not find theater!",
-		}, nil
+		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
 	var (
@@ -138,7 +97,7 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleR
 
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil || result.DeletedCount != 1 {
-		return failedResponse, err
+		return nil, failedResponse
 	}
 
 	return &proto.Response{

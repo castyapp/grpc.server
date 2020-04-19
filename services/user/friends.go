@@ -8,35 +8,22 @@ import (
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
-	"log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
 func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest) (*proto.FriendsResponse, error) {
 
 	var (
-		friends []*proto.User
-
-		database   = db.Connection
-
-		userCollection    = database.Collection("users")
-		friendsCollection = database.Collection("friends")
-
-		failedResponse = &proto.FriendsResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not get friends, Please try again later!",
-		}
+		friends           = make([]*proto.User, 0)
+		userCollection    = db.Connection.Collection("users")
+		friendsCollection = db.Connection.Collection("friends")
 	)
 
 	user, err := auth.Authenticate(req)
 	if err != nil {
-		log.Println(err)
-		return &proto.FriendsResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	filter := bson.M{
@@ -49,8 +36,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 
 	cursor, err := friendsCollection.Find(ctx, filter)
 	if err != nil {
-		log.Println(err)
-		return failedResponse, nil
+		return nil, status.Error(codes.NotFound, "Could not find friends!")
 	}
 
 	for cursor.Next(ctx) {
@@ -70,7 +56,7 @@ func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest
 			continue
 		}
 
-		messageUser, err := helpers.SetDBUserToProtoUser(friendUserObject)
+		messageUser, err := helpers.NewProtoUser(friendUserObject)
 		if err != nil {
 			continue
 		}

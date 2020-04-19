@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 )
 
-func SetDBUserToProtoUser(user *models.User) (*proto.User, error) {
+func NewProtoUser(user *models.User) (*proto.User, error) {
 
 	lastLogin, _ := ptypes.TimestampProto(user.LastLogin)
 	joinedAt,  _ := ptypes.TimestampProto(user.JoinedAt)

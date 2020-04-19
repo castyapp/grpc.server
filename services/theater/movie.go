@@ -10,11 +10,13 @@ import (
 )
 
 func GetMovieDuration(uri string) (duration int64, err error) {
+
 	command := exec.Command("ffprobe", "-show_streams", uri)
 	output, err := command.Output()
 	if err != nil {
 		return 0, err
 	}
+
 	strOutput := string(output)
 	dRegex := regexp.MustCompile(`(?m)duration=([0-9]+).([0-9]+)`)
 	if len(dRegex.FindStringIndex(strOutput)) > 0 {
@@ -26,6 +28,7 @@ func GetMovieDuration(uri string) (duration int64, err error) {
 		}
 		return int64(durationInt), nil
 	}
+
 	err = errors.New("could not get the duration parameter")
 	return
 }

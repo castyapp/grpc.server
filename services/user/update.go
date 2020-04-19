@@ -17,22 +17,13 @@ import (
 func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.GetUserResponse, error) {
 
 	var (
-		database = db.Connection
-		collection = database.Collection("users")
-		failedResponse = &proto.GetUserResponse{
-			Status:  "failed",
-			Code:    http.StatusInternalServerError,
-			Message: "Could not update the user, Please try again later!",
-		}
+		collection     = db.Connection.Collection("users")
+		failedResponse = status.Error(codes.Internal, "Could not update the user, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.GetUserResponse{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	filter := bson.M{"_id": user.ID}
@@ -43,7 +34,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 	}
 
 	if len(setUpdate) == 0 {
-		protoUser, err := helpers.SetDBUserToProtoUser(user)
+		protoUser, err := helpers.NewProtoUser(user)
 		if err != nil {
 			sentry.CaptureException(err)
 			return nil, status.Error(codes.Internal, "Internal server error!")
@@ -59,17 +50,17 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 	update := bson.M{"$set": setUpdate}
 	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	dbUpdatedUser := new(models.User)
 	if err := collection.FindOne(ctx, filter).Decode(dbUpdatedUser); err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
-	protoUser, err := helpers.SetDBUserToProtoUser(dbUpdatedUser)
+	protoUser, err := helpers.NewProtoUser(dbUpdatedUser)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	if result.ModifiedCount != 0 {
@@ -81,5 +72,5 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 		}, nil
 	}
 
-	return failedResponse, nil
+	return nil, failedResponse
 }

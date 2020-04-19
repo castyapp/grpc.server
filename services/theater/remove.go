@@ -7,6 +7,8 @@ import (
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
@@ -14,31 +16,22 @@ func (s *Service) RemoveTheater(ctx context.Context, req *proto.TheaterAuthReque
 
 	var (
 		collection     = db.Connection.Collection("theaters")
-		failedResponse = &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusBadRequest,
-			Message: "Could not remove theater, Please try again later!",
-		}
+		failedResponse = status.Error(codes.Internal, "Could not delete theater, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
 	if err != nil {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized!",
-		}, nil
+		return nil, err
 	}
 
 	if req.Theater.Id == "" {
-		return &proto.Response{
-			Status:  "failed",
-			Code:    420,
-			Message: "Validation error, TheaterId is required!",
-		}, nil
+		return nil, status.Error(codes.InvalidArgument, "TheaterId is required")
 	}
 
-	theaterObjectId, _ := primitive.ObjectIDFromHex(req.Theater.Id)
+	theaterObjectId, err := primitive.ObjectIDFromHex(req.Theater.Id)
+	if err != nil {
+		return nil, failedResponse
+	}
 
 	filter := bson.M{
 		"_id": theaterObjectId,
@@ -47,7 +40,7 @@ func (s *Service) RemoveTheater(ctx context.Context, req *proto.TheaterAuthReque
 
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
-		return failedResponse, nil
+		return nil, failedResponse
 	}
 
 	if result.DeletedCount == 1 {
@@ -58,5 +51,5 @@ func (s *Service) RemoveTheater(ctx context.Context, req *proto.TheaterAuthReque
 		}, nil
 	}
 
-	return failedResponse, nil
+	return nil, failedResponse
 }

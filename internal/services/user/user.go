@@ -46,7 +46,7 @@ func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
 
 func (s *InternalWsUserService) AcceptNotificationEvent(auth *proto.AuthenticateRequest, user *models.User, friendID string) error {
 
-	protoUser, err := helpers.SetDBUserToProtoUser(user)
+	protoUser, err := helpers.NewProtoUser(user)
 	if err != nil {
 		return err
 	}
