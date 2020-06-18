@@ -26,15 +26,8 @@ func (s *Service) GetTheater(ctx context.Context, theater *proto.Theater) (*prot
 
 	objectId, _ := primitive.ObjectIDFromHex(theater.Id)
 
-	filter := bson.M{
-		"$or": []interface{} {
-			bson.M{"hash": theater.Hash},
-			bson.M{"_id": objectId},
-		},
-	}
-
 	var dbTheater = new(models.Theater)
-	if err := collection.FindOne(ctx, filter).Decode(dbTheater); err != nil {
+	if err := collection.FindOne(ctx, bson.M{"_id": objectId}).Decode(dbTheater); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 

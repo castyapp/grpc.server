@@ -13,39 +13,61 @@ func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theat
 
 	var (
 		err error
-
-		thUser  = new(models.User)
-		thProtoMessageUser = new(proto.User)
-
-		movie = &proto.Movie{
-			Type:            theater.Movie.Type,
-			Uri:             theater.Movie.Uri,
-			Poster:          theater.Movie.Poster,
-			Size:            int64(theater.Movie.Size),
-			Length:          int64(theater.Movie.Length),
-			LastPlayedTime:  theater.Movie.LastPlayedTime,
-			Subtitles:       []*proto.Subtitle{},
-		}
+		database           = db.Connection
+		thUser             = new(models.User)
+		mediaSource        = new(models.MediaSource)
 	)
 
-	find := db.Connection.Collection("users").FindOne(ctx, bson.M{ "_id": theater.UserId })
-	if err := find.Decode(thUser); err != nil {
+	// finding current media source
+	msResult := database.Collection("media_sources").FindOne(ctx, bson.M{"_id": theater.MediaSourceId})
+	if err := msResult.Decode(mediaSource); err != nil {
 		return nil, err
 	}
 
-	thProtoMessageUser, err = NewProtoUser(thUser)
+	// finding theater's user
+	uResult := db.Connection.Collection("users").FindOne(ctx, bson.M{ "_id": theater.UserId })
+	if err := uResult.Decode(thUser); err != nil {
+		return nil, err
+	}
+
+	thProtoMessageUser, err := NewProtoUser(thUser)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaSourceProtoMessage, err := NewMediaSourceProto(mediaSource)
 	if err != nil {
 		return nil, err
 	}
 
 	return &proto.Theater{
-		Id:      theater.ID.Hex(),
-		Title:   theater.Title,
-		Hash:    theater.Hash,
-		User:    thProtoMessageUser,
-		Movie:   movie,
-		Privacy: proto.PRIVACY(theater.Privacy),
-		VideoPlayerAccess: proto.PRIVACY(theater.VideoPlayerAccess),
+		Id:                theater.ID.Hex(),
+		Title:             theater.Title,
+		User:              thProtoMessageUser,
+		MediaSource:       mediaSourceProtoMessage,
+		Privacy:           theater.Privacy,
+		VideoPlayerAccess: theater.VideoPlayerAccess,
+	}, nil
+}
+
+func NewMediaSourceProto(ms *models.MediaSource) (*proto.MediaSource, error) {
+	createdAt, err := ptypes.TimestampProto(ms.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	updatedAt, err := ptypes.TimestampProto(ms.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.MediaSource{
+		Id:               ms.ID.Hex(),
+		Type:             ms.Type,
+		Banner:           ms.Banner,
+		Uri:              ms.Uri,
+		LastPlayedTime:   ms.LastPlayedTime,
+		Subtitles:        make([]*proto.Subtitle, 0),
+		CreatedAt:        createdAt,
+		UpdatedAt:        updatedAt,
 	}, nil
 }
 
@@ -61,7 +83,7 @@ func NewSubtitleProto(subtitle *models.Subtitle) (*proto.Subtitle, error) {
 	return &proto.Subtitle{
 		Id: subtitle.ID.Hex(),
 		Lang: subtitle.Lang,
-		TheaterId: subtitle.TheaterId.Hex(),
+		MediaSourceId: subtitle.MediaSourceId.Hex(),
 		File: subtitle.File,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,

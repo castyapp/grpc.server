@@ -8,3 +8,4 @@ data
 /oauth/google/client_secret.json
 /oauth/discord/client_secret.json
 uploads
+Caddyfile

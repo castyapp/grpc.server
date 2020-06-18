@@ -15,10 +15,10 @@ import (
 )
 
 // Get all subtitles from theater
-func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.TheaterSubtitlesResponse, error) {
+func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterSubtitlesResponse, error) {
 
 	var (
-		theater        = new(models.Theater)
+		mediaSource    = new(models.Theater)
 		subtitles      = make([]*proto.Subtitle, 0)
 		collection     = db.Connection.Collection("subtitles")
 		failedResponse = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
@@ -29,15 +29,15 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 	}
 
 	var (
-		theaterObjectID, _ = primitive.ObjectIDFromHex(req.Theater.Id)
-		findFilter = bson.M{ "_id": theaterObjectID }
+		mediaSourceObjectID, _ = primitive.ObjectIDFromHex(req.Media.Id)
+		findFilter = bson.M{ "_id": mediaSourceObjectID }
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(ctx, findFilter).Decode(theater); err != nil {
-		return nil, status.Error(codes.NotFound, "Could not find theater!")
+	if err := db.Connection.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 
-	cursor, err := collection.Find(ctx, bson.M{"theater_id": theaterObjectID})
+	cursor, err := collection.Find(ctx, bson.M{"media_source_id": mediaSource.ID})
 	if err != nil {
 		return nil, failedResponse
 	}
@@ -65,7 +65,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.TheaterAuthReques
 func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleRequest) (*proto.Response, error) {
 
 	var (
-		theater        = new(models.Theater)
+		mediaSource    = new(models.Theater)
 		collection     = db.Connection.Collection("subtitles")
 		failedResponse = status.Error(codes.Internal, "Could not remove subtitle, Please try again later!")
 	)
@@ -76,22 +76,22 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleR
 	}
 
 	var (
-		theaterObjectID, _ = primitive.ObjectIDFromHex(req.Subtitle.TheaterId)
+		mediaSourceObjectID, _ = primitive.ObjectIDFromHex(req.MediaSourceId)
 		findFilter = bson.M{
-			"_id": theaterObjectID,
+			"_id": mediaSourceObjectID,
 			"user_id": user.ID,
 		}
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(ctx, findFilter).Decode(theater); err != nil {
-		return nil, status.Error(codes.NotFound, "Could not find theater!")
+	if err := db.Connection.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 
 	var (
-		subtitleObjectID, _ = primitive.ObjectIDFromHex(req.Subtitle.Id)
+		subtitleObjectID, _ = primitive.ObjectIDFromHex(req.SubtitleId)
 		filter = bson.M{
 			"_id": subtitleObjectID,
-			"theater_id": theaterObjectID,
+			"media_source_id": mediaSource.ID,
 		}
 	)
 
