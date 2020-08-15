@@ -5,6 +5,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
@@ -15,6 +16,61 @@ import (
 	"net/http"
 	"time"
 )
+
+func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.AuthenticateRequest) (*proto.PendingFriendRequests, error) {
+
+	var (
+		friendRequests    = make([]*proto.FriendRequest, 0)
+		userCollection    = db.Connection.Collection("users")
+		friendsCollection = db.Connection.Collection("friends")
+	)
+
+	user, err := auth.Authenticate(req)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{
+		"accepted": false,
+		"friend_id": user.ID,
+	}
+
+	cursor, err := friendsCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find pending friends!")
+	}
+
+	for cursor.Next(ctx) {
+
+		var friend = new(models.Friend)
+		if err := cursor.Decode(friend); err != nil {
+			continue
+		}
+
+		filter := bson.M{"_id": friend.UserId}
+		dbFriend := new(models.User)
+
+		if err := userCollection.FindOne(ctx, filter).Decode(dbFriend); err != nil {
+			continue
+		}
+
+		friendProto, err := helpers.NewProtoUser(dbFriend)
+		if err != nil {
+			continue
+		}
+
+		friendRequests = append(friendRequests, &proto.FriendRequest{
+			RequestId: friend.ID.Hex(),
+			Friend: friendProto,
+		})
+	}
+
+	return &proto.PendingFriendRequests{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Result:  friendRequests,
+	}, nil
+}
 
 func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Response, error) {
 

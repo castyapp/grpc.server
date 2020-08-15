@@ -108,7 +108,7 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 	}, nil
 }
 
-func (s *Service) GetUser(ctx context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
+func (s *Service) GetUser(_ context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
 
 	user, err := auth.Authenticate(req)
 	if err != nil {

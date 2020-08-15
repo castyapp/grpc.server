@@ -2,18 +2,18 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/jwt"
 	"github.com/CastyLab/grpc.server/services"
+	"github.com/getsentry/sentry-go"
 	"github.com/golang/protobuf/ptypes/any"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"net/http"
 	"strings"
@@ -27,18 +27,9 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		database = db.Connection
 		existsUser = new(models.User)
 		collection = database.Collection("users")
+		thCollection = database.Collection("theaters")
 		validationErrors []*any.Any
 	)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
-	}
-
-	recaptcha := md.Get("g-recaptcha-response")
-	if success, err := helpers.VerifyRecaptcha(recaptcha[0]); err != nil || !success {
-		return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
-	}
 
 	_ = collection.FindOne(ctx, bson.M{ "username": user.Username }).Decode(existsUser)
 	_ = collection.FindOne(ctx, bson.M{ "email": user.Email }).Decode(existsUser)
@@ -77,6 +68,8 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		"email_verified": false,
 		"email_token": services.RandomString(40),
 		"state":      int(proto.PERSONAL_STATE_OFFLINE),
+		"two_fa_enabled": false,
+		"two_fa_token":   fmt.Sprintf("re_token_%s", services.RandomString(30)),
 		"activity":   bson.M{},
 		"avatar":     "default",
 		"last_login": time.Now(),
@@ -94,6 +87,25 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(ctx, resultID.Hex())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")
+	}
+
+	theater := bson.M{
+		"description":          fmt.Sprintf("%s's Theater", dbUser["fullname"]),
+		"privacy":              proto.PRIVACY_PUBLIC,
+		"video_player_access":  proto.VIDEO_PLAYER_ACCESS_ACCESS_BY_USER,
+		"user_id":              resultID,
+		"created_at":           time.Now(),
+		"updated_at":           time.Now(),
+	}
+
+	_, err = thCollection.InsertOne(ctx, theater)
+	if err != nil {
+		sentry.CaptureException(fmt.Errorf("could not create user!: %v", err))
+		_ , err := collection.DeleteOne(ctx, bson.M{ "_id": resultID })
+		if err != nil {
+			sentry.CaptureException(fmt.Errorf("could not failed user's deletation!: %v", err))
+		}
+		return nil, status.Error(codes.Internal, "Could not create user! Please try again later!")
 	}
 
 	return &proto.AuthResponse{

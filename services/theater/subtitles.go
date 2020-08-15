@@ -11,29 +11,109 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
+	"time"
 )
+
+// Get all subtitles from theater
+func (s *Service) AddSubtitles(ctx context.Context, req *proto.AddSubtitlesRequest) (*proto.SubtitlesResponse, error) {
+
+	var (
+		insertMap              = make([]interface{}, 0)
+		mediaSource            = new(models.MediaSource)
+		mediaSourcesCollection = db.Connection.Collection("media_sources")
+		subtitlesCollection    = db.Connection.Collection("subtitles")
+		failedResponse         = status.Error(codes.Internal, "Could not add subtitles, Please try again later!")
+	)
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		mediaSourceObjectID, _ = primitive.ObjectIDFromHex(req.MediaSourceId)
+		findFilter = bson.M{
+			"_id": mediaSourceObjectID,
+			"user_id": user.ID,
+		}
+	)
+
+	if err := mediaSourcesCollection.FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find media source!")
+	}
+
+	for _, subtitle := range req.Subtitles {
+		insertMap = append(insertMap, bson.M{
+			"user_id": user.ID,
+			"media_source_id": mediaSource.ID,
+			"file": subtitle.File,
+			"lang": subtitle.Lang,
+			"created_at": time.Now(),
+			"updated_at": time.Now(),
+		})
+	}
+
+	if _, err := subtitlesCollection.InsertMany(ctx, insertMap); err != nil {
+		log.Println(err)
+		return nil, failedResponse
+	}
+
+	return &proto.SubtitlesResponse{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "Subtitle added successfully!",
+	}, nil
+}
 
 // Get all subtitles from theater
 func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterSubtitlesResponse, error) {
 
 	var (
-		mediaSource    = new(models.Theater)
-		subtitles      = make([]*proto.Subtitle, 0)
-		collection     = db.Connection.Collection("subtitles")
-		failedResponse = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
+		err error
+		authenticated           = false
+		authUser                = new(models.User)
+		dbTheater               = new(models.Theater)
+		mediaSource             = new(models.MediaSource)
+		subtitles               = make([]*proto.Subtitle, 0)
+		theatersCollection      = db.Connection.Collection("theaters")
+		mediaSourcesCollection  = db.Connection.Collection("media_sources")
+		collection              = db.Connection.Collection("subtitles")
+		failedResponse          = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
 	)
 
-	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
-		return nil, err
+	if req.AuthRequest != nil {
+		if authUser, err = auth.Authenticate(req.AuthRequest); err != nil {
+			return nil, err
+		}
+		authenticated = true
 	}
 
-	var (
-		mediaSourceObjectID, _ = primitive.ObjectIDFromHex(req.Media.Id)
-		findFilter = bson.M{ "_id": mediaSourceObjectID }
-	)
+	mediaSourceObjectID, err := primitive.ObjectIDFromHex(req.Media.Id)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "Could not parse theater id!")
+	}
 
-	if err := db.Connection.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
+	if err := theatersCollection.FindOne(ctx, bson.M{ "media_source_id": mediaSourceObjectID }).Decode(dbTheater); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find theater with this media source!")
+	}
+
+	if !authenticated {
+		switch dbTheater.Privacy {
+		case proto.PRIVACY_PRIVATE:
+			return nil, status.Error(codes.PermissionDenied, "Permission Denied!")
+		}
+	} else {
+		if dbTheater.UserId.Hex() != authUser.ID.Hex() {
+			switch dbTheater.Privacy {
+			case proto.PRIVACY_PRIVATE:
+				return nil, status.Error(codes.PermissionDenied, "Permission Denied!")
+			}
+		}
+	}
+
+	if err := mediaSourcesCollection.FindOne(ctx, bson.M{ "_id": dbTheater.MediaSourceId }).Decode(mediaSource); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 

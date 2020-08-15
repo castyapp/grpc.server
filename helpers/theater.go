@@ -13,15 +13,21 @@ func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theat
 
 	var (
 		err error
-		database           = db.Connection
-		thUser             = new(models.User)
-		mediaSource        = new(models.MediaSource)
+		database                 = db.Connection
+		thUser                   = new(models.User)
+		mediaSourceProtoMessage  = new(proto.MediaSource)
+		mediaSource              = new(models.MediaSource)
 	)
 
-	// finding current media source
-	msResult := database.Collection("media_sources").FindOne(ctx, bson.M{"_id": theater.MediaSourceId})
-	if err := msResult.Decode(mediaSource); err != nil {
-		return nil, err
+	if theater.MediaSourceId != nil {
+		// finding current media source
+		msResult := database.Collection("media_sources").FindOne(ctx, bson.M{"_id": theater.MediaSourceId})
+		if err := msResult.Decode(mediaSource); err == nil {
+			mediaSourceProtoMessage, err = NewMediaSourceProto(mediaSource)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// finding theater's user
@@ -35,14 +41,9 @@ func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theat
 		return nil, err
 	}
 
-	mediaSourceProtoMessage, err := NewMediaSourceProto(mediaSource)
-	if err != nil {
-		return nil, err
-	}
-
 	return &proto.Theater{
 		Id:                theater.ID.Hex(),
-		Title:             theater.Title,
+		Description:       theater.Description,
 		User:              thProtoMessageUser,
 		MediaSource:       mediaSourceProtoMessage,
 		Privacy:           theater.Privacy,
@@ -61,10 +62,12 @@ func NewMediaSourceProto(ms *models.MediaSource) (*proto.MediaSource, error) {
 	}
 	return &proto.MediaSource{
 		Id:               ms.ID.Hex(),
+		Title:            ms.Title,
 		Type:             ms.Type,
 		Banner:           ms.Banner,
 		Uri:              ms.Uri,
 		LastPlayedTime:   ms.LastPlayedTime,
+		Length:           ms.Length,
 		Subtitles:        make([]*proto.Subtitle, 0),
 		CreatedAt:        createdAt,
 		UpdatedAt:        updatedAt,

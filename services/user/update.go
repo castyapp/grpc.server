@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 )
 
@@ -31,6 +32,10 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 
 	if req.Result.Fullname != "" && user.Fullname != req.Result.Fullname {
 		setUpdate["fullname"] = req.Result.Fullname
+	}
+
+	if req.Result.Avatar != "" && user.Avatar != req.Result.Avatar {
+		setUpdate["avatar"] = req.Result.Avatar
 	}
 
 	if len(setUpdate) == 0 {
@@ -69,6 +74,54 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 			Code:    http.StatusOK,
 			Message: "User updated successfully!",
 			Result:  protoUser,
+		}, nil
+	}
+
+	return nil, failedResponse
+}
+
+func (s *Service) UpdatePassword(ctx context.Context, req *proto.UpdatePasswordRequest) (*proto.Response, error) {
+
+	var (
+		collection     = db.Connection.Collection("users")
+		failedResponse = status.Error(codes.Internal, "Could not update the user's password, Please try again later!")
+	)
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	if !auth.ValidatePassword(user, req.CurrentPassword) {
+		return nil, status.Error(codes.InvalidArgument, "Invalid Credentials!")
+	}
+
+	if req.NewPassword != req.VerifyNewPassword {
+		return nil, status.Error(codes.InvalidArgument, "Passwords does not match!")
+	}
+
+	log.Println(models.HashPassword(req.VerifyNewPassword))
+	log.Println(req.VerifyNewPassword)
+
+	var (
+		filter    = bson.M{"_id": user.ID}
+		update    = bson.M{
+			"$set": bson.M{
+				"password": models.HashPassword(req.VerifyNewPassword),
+			},
+		}
+	)
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, failedResponse
+	}
+
+	if result.ModifiedCount != 0 {
+		return &proto.Response{
+			Status:  "success",
+			Code:    http.StatusOK,
+			Message: "Password updated successfully!",
 		}, nil
 	}
 

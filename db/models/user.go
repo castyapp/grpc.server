@@ -21,6 +21,9 @@ type User struct {
 	EmailVerified bool                  `bson:"email_verified, omitempty" json:"email_verified, omitempty"`
 	EmailToken    string                `bson:"email_token, omitempty" json:"-"`
 
+	TwoFactorAuthEnabled  bool          `bson:"two_fa_enabled, omitempty" json:"two_fa_enabled"`
+	TwoFactorAuthToken    string        `bson:"two_fa_token, omitempty" json:"_"`
+
 	State         int                   `bson:"state, omitempty" json:"state, omitempty"`
 	Activity      Activity              `bson:"activity, omitempty" json:"activity, omitempty"`
 	Avatar        string                `bson:"avatar, omitempty" json:"avatar, omitempty"`

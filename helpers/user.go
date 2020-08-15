@@ -24,6 +24,8 @@ func NewProtoUser(user *models.User) (*proto.User, error) {
 		EmailVerified:  user.EmailVerified,
 		Avatar:         user.Avatar,
 		State:          proto.PERSONAL_STATE(user.State),
+		TwoFaEnabled:   user.TwoFactorAuthEnabled,
+		TwoFaToken:     user.TwoFactorAuthToken,
 		LastLogin:      lastLogin,
 		JoinedAt:       joinedAt,
 		UpdatedAt:      updatedAt,

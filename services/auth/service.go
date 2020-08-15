@@ -30,7 +30,7 @@ func (s *Service) isEmail(user string) bool {
 	return false
 }
 
-func (s *Service) validatePassword(user *models.User, pass string) bool {
+func ValidatePassword(user *models.User, pass string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pass))
 	return err == nil
 }
@@ -67,7 +67,7 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		return nil, status.Error(codes.NotFound, "Could not find user!")
 	}
 
-	if s.validatePassword(user, req.Pass) {
+	if ValidatePassword(user, req.Pass) {
 
 		token, refreshedToken, err := jwt.CreateNewTokens(ctx, user.ID.Hex())
 		if err != nil {

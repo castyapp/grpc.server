@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"github.com/CastyLab/grpc.server/internal/services/theater"
 	"github.com/CastyLab/grpc.server/internal/services/user"
 	_ "github.com/joho/godotenv/autoload"
 	"net"
@@ -11,7 +12,8 @@ import (
 
 type WebsocketInternalClient struct {
 	http.Client
-	UserService *user.InternalWsUserService
+	UserService    *user.InternalWsUserService
+	TheaterService *theater.InternalWsTheaterService
 }
 
 var (
@@ -33,10 +35,12 @@ func init() {
 
 		// Internal websocket services
 		userService = &user.InternalWsUserService{HttpClient: httpClient}
+		theaterService = &theater.InternalWsTheaterService{HttpClient: httpClient}
 	)
 
 	Client = &WebsocketInternalClient{
 		Client: httpClient,
 		UserService: userService,
+		TheaterService: theaterService,
 	}
 }
