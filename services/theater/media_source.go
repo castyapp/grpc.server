@@ -71,7 +71,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 		}
 
 		// sending new media source to websocket
-		err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(mediaSourceId.Hex(), theater.ID.Hex())
+		err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(theater.ID.Hex(), mediaSourceId.Hex())
 		if err != nil {
 			sentry.CaptureException(err)
 		}
@@ -188,7 +188,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 	}
 
 	// sending new media source to websocket
-	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(insertedID.Hex(), theater.ID.Hex())
+	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(theater.ID.Hex(), insertedID.Hex())
 	if err != nil {
 		sentry.CaptureException(err)
 	}
@@ -317,7 +317,7 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		if result.DeletedCount == 1 {
 
 			// sending new media source to websocket
-			err := internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.MediaSourceId, theater.ID.Hex())
+			err := internal.Client.TheaterService.SendMediaSourceUpdateEvent(theater.ID.Hex(), req.MediaSourceId)
 			if err != nil {
 				sentry.CaptureException(err)
 			}
