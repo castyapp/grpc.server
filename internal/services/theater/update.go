@@ -2,6 +2,7 @@ package theater
 
 import (
 	"encoding/json"
+	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/pingcap/errors"
 	"net/http"
 	"net/url"
@@ -12,7 +13,8 @@ type InternalWsTheaterService struct {
 	HttpClient http.Client
 }
 
-func (s *InternalWsTheaterService) SendMediaSourceUpdateEvent(theaterId, mediaSourceId string) error {
+func (s *InternalWsTheaterService) SendMediaSourceUpdateEvent(req *proto.AuthenticateRequest, theaterId, mediaSourceId string) error {
+
 	params := url.Values{}
 	params.Set("theater_id", theaterId)
 	params.Set("media_source_id", mediaSourceId)
@@ -22,6 +24,7 @@ func (s *InternalWsTheaterService) SendMediaSourceUpdateEvent(theaterId, mediaSo
 		return err
 	}
 
+	request.Header.Set("Authorization", string(req.Token))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := s.HttpClient.Do(request)
@@ -41,7 +44,7 @@ func (s *InternalWsTheaterService) SendMediaSourceUpdateEvent(theaterId, mediaSo
 	return errors.New("Something went wrong, Could not send event!")
 }
 
-func (s *InternalWsTheaterService) SendTheaterUpdateEvent(theaterId string) error {
+func (s *InternalWsTheaterService) SendTheaterUpdateEvent(req *proto.AuthenticateRequest, theaterId string) error {
 	params := url.Values{}
 	params.Set("theater_id", theaterId)
 
@@ -50,6 +53,7 @@ func (s *InternalWsTheaterService) SendTheaterUpdateEvent(theaterId string) erro
 		return err
 	}
 
+	request.Header.Set("Authorization", string(req.Token))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := s.HttpClient.Do(request)

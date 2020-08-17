@@ -101,7 +101,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	for _, friend := range friends {
 		// send a new notification event to friend
-		err := internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
+		err := internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
 		if err != nil {
 			sentry.CaptureException(err)
 		}

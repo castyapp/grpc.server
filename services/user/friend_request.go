@@ -235,7 +235,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	}
 
 	// send new friend request event to friend websocket clients
-	err = internal.Client.UserService.SendNewNotificationsEvent(friend.ID.Hex())
+	err = internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
 	if err != nil {
 		sentry.CaptureException(err)
 	}

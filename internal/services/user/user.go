@@ -15,7 +15,7 @@ type InternalWsUserService struct {
 	HttpClient http.Client
 }
 
-func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
+func (s *InternalWsUserService) SendNewNotificationsEvent(req *proto.AuthenticateRequest, userId string) error {
 
 	params := url.Values{}
 	params.Set("user_id", userId)
@@ -25,6 +25,7 @@ func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
 		return err
 	}
 
+	request.Header.Set("Authorization", string(req.Token))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := s.HttpClient.Do(request)
@@ -44,7 +45,7 @@ func (s *InternalWsUserService) SendNewNotificationsEvent(userId string) error {
 	return errors.New("Something went wrong, Could not send event!")
 }
 
-func (s *InternalWsUserService) AcceptNotificationEvent(auth *proto.AuthenticateRequest, user *models.User, friendID string) error {
+func (s *InternalWsUserService) AcceptNotificationEvent(req *proto.AuthenticateRequest, user *models.User, friendID string) error {
 
 	protoUser, err := helpers.NewProtoUser(user)
 	if err != nil {
@@ -65,7 +66,7 @@ func (s *InternalWsUserService) AcceptNotificationEvent(auth *proto.Authenticate
 		return err
 	}
 
-	request.Header.Set("Authorization", string(auth.Token))
+	request.Header.Set("Authorization", string(req.Token))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := s.HttpClient.Do(request)

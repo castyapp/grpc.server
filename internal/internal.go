@@ -23,7 +23,6 @@ var (
 func init() {
 
 	var (
-
 		address = os.Getenv("INTERNAL_UNIX_FILE")
 		httpClient = http.Client{
 			Transport: &http.Transport{
@@ -32,7 +31,6 @@ func init() {
 				},
 			},
 		}
-
 		// Internal websocket services
 		userService = &user.InternalWsUserService{HttpClient: httpClient}
 		theaterService = &theater.InternalWsTheaterService{HttpClient: httpClient}

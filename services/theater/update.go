@@ -55,7 +55,7 @@ func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthReque
 			return nil, failedResponse
 		}
 		// sending updated entity through websocket
-		err := internal.Client.TheaterService.SendTheaterUpdateEvent(theater.ID.Hex())
+		err := internal.Client.TheaterService.SendTheaterUpdateEvent(req.AuthRequest, theater.ID.Hex())
 		if err != nil {
 			sentry.CaptureException(err)
 		}
