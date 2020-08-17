@@ -8,6 +8,7 @@ import (
 	"github.com/CastyLab/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +16,9 @@ import (
 	"regexp"
 )
 
-type Service struct {}
+type Service struct {
+	db *mongo.Database
+}
 
 func (s *Service) isEmail(user string) bool {
 
@@ -42,17 +45,6 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		user         = new(models.User)
 		unauthorized = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
-
-	//md, ok := metadata.FromIncomingContext(ctx)
-	//if !ok {
-	//	return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
-	//}
-	//
-	//recaptcha := md.Get("g-recaptcha-response")
-	//if success, err := helpers.VerifyRecaptcha(recaptcha[0]); err != nil || !success {
-	//	log.Println(req, err)
-	//	return nil, status.Error(codes.InvalidArgument, "Captcha is required!")
-	//}
 
 	if req.User == "" || req.Pass == "" {
 		return nil, unauthorized

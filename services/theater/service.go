@@ -1,3 +1,7 @@
 package theater
 
-type Service struct {}
+import "go.mongodb.org/mongo-driver/mongo"
+
+type Service struct {
+	db *mongo.Database
+}

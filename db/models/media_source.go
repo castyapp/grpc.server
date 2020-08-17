@@ -16,7 +16,6 @@ type MediaSource struct {
 	Banner          string                    `bson:"banner" json:"banner,omitempty"`
 	Uri             string                    `bson:"uri" json:"uri,omitempty"`
 
-	LastPlayedTime  int64                     `bson:"last_played_time" json:"last_played_time,omitempty"`
 	Length          int64                     `bson:"length" json:"length,omitempty"`
 
 	Subtitles       []*Subtitle               `json:"subtitles,omitempty"`
