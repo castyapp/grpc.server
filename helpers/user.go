@@ -23,19 +23,11 @@ func NewProtoUser(user *models.User) (*proto.User, error) {
 		Verified:       user.Verified,
 		EmailVerified:  user.EmailVerified,
 		Avatar:         user.Avatar,
-		State:          proto.PERSONAL_STATE(user.State),
 		TwoFaEnabled:   user.TwoFactorAuthEnabled,
 		TwoFaToken:     user.TwoFactorAuthToken,
 		LastLogin:      lastLogin,
 		JoinedAt:       joinedAt,
 		UpdatedAt:      updatedAt,
-	}
-
-	if user.Activity.ID != nil {
-		protoUser.Activity = &proto.Activity{
-			Id: user.Activity.ID.Hex(),
-			Activity: user.Activity.Activity,
-		}
 	}
 
 	return protoUser, nil

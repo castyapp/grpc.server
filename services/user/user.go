@@ -80,34 +80,6 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	}, nil
 }
 
-func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
-
-	user, err := auth.Authenticate(req.AuthRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		filter = bson.M{"_id": user.ID}
-		update = bson.M{
-			"$set": bson.M{
-				"state": int(req.State),
-			},
-		}
-	)
-
-	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
-		sentry.CaptureException(err)
-		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
-	}
-
-	return &proto.Response{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Message: "The requested parameter is updated successfully!",
-	}, nil
-}
-
 func (s *Service) GetUser(_ context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
 
 	user, err := auth.Authenticate(req)
