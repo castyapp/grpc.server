@@ -36,6 +36,15 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 		return nil, status.Error(codes.Unauthenticated, "Unauthorized!")
 	}
 
+	var (
+		theater = new(models.Theater)
+		findTheater = bson.M{ "user_id": user.ID }
+	)
+
+	if err := db.Connection.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find theater!")
+	}
+
 	mediaSourceId, err := primitive.ObjectIDFromHex(req.Media.Id)
 	if err != nil {
 		return nil, err
@@ -52,7 +61,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 
 	if count != 0 {
 
-		update, err := collection.UpdateOne(ctx, bson.M{ "user_id": user.ID }, bson.M{
+		_, err := collection.UpdateOne(ctx, bson.M{ "user_id": user.ID }, bson.M{
 			"$set": bson.M{
 				"media_source_id": mediaSourceId,
 			},
@@ -61,10 +70,8 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 			return nil, err
 		}
 
-		theaterId := update.UpsertedID.(primitive.ObjectID)
-
 		// sending new media source to websocket
-		err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(mediaSourceId.Hex(), theaterId.Hex())
+		err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(mediaSourceId.Hex(), theater.ID.Hex())
 		if err != nil {
 			sentry.CaptureException(err)
 		}
@@ -115,6 +122,15 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		return nil, status.Error(codes.Unauthenticated, "Unauthorized!")
 	}
 
+	var (
+		theater = new(models.Theater)
+		findTheater = bson.M{ "user_id": user.ID }
+	)
+
+	if err := db.Connection.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find theater!")
+	}
+
 	if req.Media.Uri == "" {
 		validationErrors = append(validationErrors, &any.Any{
 			TypeUrl: "uri",
@@ -160,41 +176,19 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		return nil, failedResponse
 	}
 
-	var (
-		theaterId primitive.ObjectID
-		insertedID = result.InsertedID.(primitive.ObjectID)
-	)
-
+	insertedID := result.InsertedID.(primitive.ObjectID)
 	update, _ := theatersCollection.UpdateOne(ctx, bson.M{"user_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"media_source_id": insertedID,
 		},
 	})
 
-	// if theater didnt match, then we will create one for user
-	if update.MatchedCount == 0 {
-		insertedTheater, err := theatersCollection.InsertOne(ctx, bson.M{
-			"title":               fmt.Sprintf("%s's Theater", user.Fullname),
-			"privacy":             proto.PRIVACY_PUBLIC,
-			"video_player_access": proto.VIDEO_PLAYER_ACCESS_ACCESS_BY_USER,
-			"user_id":             user.ID,
-			"media_source_id":     insertedID,
-			"created_at":          time.Now(),
-			"updated_at":          time.Now(),
-		})
-		if err != nil {
-			if _, err := collection.DeleteOne(ctx, bson.M{ "_id": insertedID }); err != nil {
-				sentry.CaptureException(fmt.Errorf("could not delete media source while creating new theater %v", err))
-			}
-			return nil, status.Errorf(codes.Internal, "could not create media source, please try again later!")
-		}
-		theaterId = insertedTheater.InsertedID.(primitive.ObjectID)
-	} else {
-		theaterId = update.UpsertedID.(primitive.ObjectID)
+	if update.ModifiedCount == 0 {
+		return nil, status.Errorf(codes.Internal, "could not update media source, please try again later!")
 	}
 
 	// sending new media source to websocket
-	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(insertedID.Hex(), theaterId.Hex())
+	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(insertedID.Hex(), theater.ID.Hex())
 	if err != nil {
 		sentry.CaptureException(err)
 	}
