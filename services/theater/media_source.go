@@ -11,6 +11,7 @@ import (
 	"github.com/CastyLab/grpc.server/services"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,12 +24,11 @@ import (
 	"time"
 )
 
-func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.Response, error) {
+func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterMediaSourcesResponse, error) {
 
 	var (
 		database   = db.Connection
 		collection = database.Collection("theaters")
-		emptyResponse = status.Error(codes.Aborted, "Could not update theater!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
@@ -41,7 +41,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 		findTheater = bson.M{ "user_id": user.ID }
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
+	if err := collection.FindOne(ctx, findTheater).Decode(theater); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
@@ -50,40 +50,40 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 		return nil, err
 	}
 
-	count, err := database.Collection("media_sources").CountDocuments(ctx, bson.M{
-		"_id":     mediaSourceId,
-		"user_id": user.ID,
-	})
+	mediaSource := new(models.MediaSource)
 
-	if err != nil {
+	decoder := database.Collection("media_sources").FindOne(ctx, bson.M{"_id": mediaSourceId, "user_id": user.ID })
+	if err := decoder.Decode(mediaSource); err != nil {
 		return nil, err
 	}
 
-	if count != 0 {
-
-		_, err := collection.UpdateOne(ctx, bson.M{ "user_id": user.ID }, bson.M{
+	var (
+		filter = bson.M{ "user_id": user.ID }
+		update = bson.M{
 			"$set": bson.M{
-				"media_source_id": mediaSourceId,
+				"media_source_id": mediaSource.ID,
 			},
-		})
-		if err != nil {
-			return nil, err
 		}
+	)
 
-		// sending new media source to websocket
-		err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), mediaSourceId.Hex())
-		if err != nil {
-			sentry.CaptureException(err)
-		}
-
-		return &proto.Response{
-			Status:  "success",
-			Code:    http.StatusOK,
-			Message: "Media source selected successfully!",
-		}, nil
+	if _, err := collection.UpdateOne(ctx, filter, update); err != nil {
+		return nil, err
 	}
 
-	return nil, emptyResponse
+	// sending new media source to websocket
+	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), mediaSourceId.Hex())
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+
+	mediaSourceProto := helpers.NewMediaSourceProto(mediaSource)
+
+	return &proto.TheaterMediaSourcesResponse{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "Media source selected successfully!",
+		Result: []*proto.MediaSource{mediaSourceProto},
+	}, nil
 }
 
 func (s *Service) SavePosterFromUrl(url string) (string, error) {
@@ -107,7 +107,7 @@ func (s *Service) SavePosterFromUrl(url string) (string, error) {
 	return posterName, nil
 }
 
-func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.Response, error) {
+func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterMediaSourcesResponse, error) {
 
 	var (
 		validationErrors []*any.Any
@@ -193,10 +193,25 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		sentry.CaptureException(err)
 	}
 
-	return &proto.Response{
+	createdAt, _ := ptypes.TimestampProto(time.Now())
+
+	return &proto.TheaterMediaSourcesResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
 		Message: "Media source created successfully!",
+		Result: []*proto.MediaSource{
+			{
+				Id:     insertedID.Hex(),
+				Title:  req.Media.Title,
+				Type:   req.Media.Type,
+				Banner: poster,
+				Uri:    req.Media.Uri,
+				Length: req.Media.Length,
+				UserId: user.ID.Hex(),
+				CreatedAt: createdAt,
+				UpdatedAt: createdAt,
+			},
+		},
 	}, nil
 }
 
@@ -233,10 +248,7 @@ func (s *Service) GetMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 
-	protoMediaSource, err := helpers.NewMediaSourceProto(mediaSource)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "Could not parse media source!")
-	}
+	protoMediaSource := helpers.NewMediaSourceProto(mediaSource)
 	mediaSources = append(mediaSources, protoMediaSource)
 
 	return &proto.TheaterMediaSourcesResponse{
@@ -272,10 +284,7 @@ func (s *Service) GetMediaSources(ctx context.Context, req *proto.MediaSourceAut
 		if err := cursor.Decode(dbMediaSource); err != nil {
 			continue
 		}
-		protoMediaSource, err := helpers.NewMediaSourceProto(dbMediaSource)
-		if err != nil {
-			continue
-		}
+		protoMediaSource := helpers.NewMediaSourceProto(dbMediaSource)
 		mediaSources = append(mediaSources, protoMediaSource)
 	}
 

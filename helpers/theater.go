@@ -23,10 +23,7 @@ func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theat
 		// finding current media source
 		msResult := database.Collection("media_sources").FindOne(ctx, bson.M{"_id": theater.MediaSourceId})
 		if err := msResult.Decode(mediaSource); err == nil {
-			mediaSourceProtoMessage, err = NewMediaSourceProto(mediaSource)
-			if err != nil {
-				return nil, err
-			}
+			mediaSourceProtoMessage = NewMediaSourceProto(mediaSource)
 		}
 	}
 
@@ -51,15 +48,9 @@ func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theat
 	}, nil
 }
 
-func NewMediaSourceProto(ms *models.MediaSource) (*proto.MediaSource, error) {
-	createdAt, err := ptypes.TimestampProto(ms.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	updatedAt, err := ptypes.TimestampProto(ms.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
+func NewMediaSourceProto(ms *models.MediaSource) *proto.MediaSource {
+	createdAt, _ := ptypes.TimestampProto(ms.CreatedAt)
+	updatedAt, _ := ptypes.TimestampProto(ms.UpdatedAt)
 	return &proto.MediaSource{
 		Id:               ms.ID.Hex(),
 		Title:            ms.Title,
@@ -70,7 +61,7 @@ func NewMediaSourceProto(ms *models.MediaSource) (*proto.MediaSource, error) {
 		Subtitles:        make([]*proto.Subtitle, 0),
 		CreatedAt:        createdAt,
 		UpdatedAt:        updatedAt,
-	}, nil
+	}
 }
 
 func NewSubtitleProto(subtitle *models.Subtitle) (*proto.Subtitle, error) {
