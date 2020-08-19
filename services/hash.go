@@ -54,7 +54,7 @@ func RandomNumber(length int) string {
 }
 
 func RandomUserName() string {
-	return "u-" + RandomNumber(10)
+	return "u" + RandomNumber(10)
 }
 
 func GenerateHash() string {

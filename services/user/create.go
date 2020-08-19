@@ -20,19 +20,67 @@ import (
 	"time"
 )
 
+var invalidUsernames = []string{
+	"login",
+	"logout",
+	"register",
+	"iforgot",
+	"settings",
+	"messages",
+	"home",
+	"me",
+	"profile",
+	"callback",
+	"oauth",
+	"terms",
+}
+
 func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) (*proto.AuthResponse, error)  {
 
 	var (
 		user     = req.User
 		database = db.Connection
+		validationErrors []*any.Any
 		existsUser = new(models.User)
 		collection = database.Collection("users")
 		thCollection = database.Collection("theaters")
-		validationErrors []*any.Any
 	)
 
-	_ = collection.FindOne(ctx, bson.M{ "username": user.Username }).Decode(existsUser)
-	_ = collection.FindOne(ctx, bson.M{ "email": user.Email }).Decode(existsUser)
+	for _, invalid := range invalidUsernames {
+		if req.User.Username == invalid {
+			return nil, status.ErrorProto(&spb.Status{
+				Code: int32(codes.InvalidArgument),
+				Message: "Validation Error!",
+				Details: []*any.Any{
+					{
+						TypeUrl: "username",
+						Value: []byte("Username is not available!"),
+					},
+				},
+			})
+		}
+	}
+
+	if strings.Contains(user.Username, "/") {
+		return nil, status.ErrorProto(&spb.Status{
+			Code: int32(codes.InvalidArgument),
+			Message: "Validation Error!",
+			Details: []*any.Any{
+				{
+					TypeUrl: "username",
+					Value: []byte("Username is not available!"),
+				},
+			},
+		})
+	}
+
+	if err := collection.FindOne(ctx, bson.M{ "username": user.Username }).Decode(existsUser); err != nil {
+		sentry.CaptureException(err)
+	}
+
+	if err := collection.FindOne(ctx, bson.M{ "email": user.Email }).Decode(existsUser); err != nil {
+		sentry.CaptureException(err)
+	}
 
 	if existsUser.Username == user.Username {
 		validationErrors = append(validationErrors, &any.Any{
@@ -57,24 +105,23 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 	}
 
 	dbUser := bson.M{
-		"fullname":   user.Fullname,
-		"hash":       services.GenerateHash(),
-		"username":   strings.ToLower(user.Username),
-		"email":      user.Email,
-		"password":   models.HashPassword(user.Password),
-		"is_active":  true,
-		"verified": false,
-		"is_staff": false,
+		"fullname":       user.Fullname,
+		"hash":           services.GenerateHash(),
+		"username":       strings.ToLower(user.Username),
+		"email":          user.Email,
+		"password":       models.HashPassword(user.Password),
+		"is_active":      true,
+		"verified":       false,
+		"is_staff":       false,
 		"email_verified": false,
-		"email_token": services.RandomString(40),
-		"state":      int(proto.PERSONAL_STATE_OFFLINE),
+		"email_token":    services.RandomString(40),
+		"state":          int(proto.PERSONAL_STATE_OFFLINE),
 		"two_fa_enabled": false,
 		"two_fa_token":   fmt.Sprintf("re_token_%s", services.RandomString(30)),
-		"activity":   bson.M{},
-		"avatar":     "default",
-		"last_login": time.Now(),
-		"joined_at":  time.Now(),
-		"updated_at": time.Now(),
+		"avatar":         "default",
+		"last_login":     time.Now(),
+		"joined_at":      time.Now(),
+		"updated_at":     time.Now(),
 	}
 
 	result, err := collection.InsertOne(ctx, dbUser)
