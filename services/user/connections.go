@@ -13,6 +13,48 @@ import (
 	"net/http"
 )
 
+func (s *Service) GetConnection(ctx context.Context, req *proto.GetConnectionRequest) (*proto.ConnectionsResponse, error) {
+
+	var (
+		connections = make([]*proto.Connection, 0)
+		collection  = db.Connection.Collection("connections")
+	)
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{
+		"type":    req.Connection.Type,
+		"user_id": user.ID,
+	}
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find connections!")
+	}
+
+	for cursor.Next(ctx) {
+		connection := new(models.Connection)
+		if err := cursor.Decode(connection); err != nil {
+			continue
+		}
+		protoConnection, err := helpers.NewProtoConnection(connection)
+		if err != nil {
+			continue
+		}
+		connections = append(connections, protoConnection)
+	}
+
+	return &proto.ConnectionsResponse{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Result:  connections,
+	}, nil
+
+}
+
 func (s *Service) GetConnections(ctx context.Context, req *proto.AuthenticateRequest) (*proto.ConnectionsResponse, error) {
 
 	var (
