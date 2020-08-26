@@ -36,7 +36,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	if req.AuthRequest != nil {
 		user, err = Authenticate(req.AuthRequest)
 		if err != nil {
-			return nil, err
+			return nil, unauthorized
 		}
 		authenticated = true
 	}
@@ -45,29 +45,29 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	case proto.Connection_SPOTIFY:
 		token, err = spotify.Authenticate(req.Code)
 		if err != nil {
-			return nil, unauthorized
+			return nil, err
 		}
 		oauthUser, err = spotify.GetUserByToken(token)
 		if err != nil {
-			return nil, unauthorized
+			return nil, err
 		}
 	case proto.Connection_GOOGLE:
 		token, err = google.Authenticate(req.Code)
 		if err != nil {
-			return nil, unauthorized
+			return nil, err
 		}
 		oauthUser, err = google.GetUserByToken(token)
 		if err != nil {
-			return nil, unauthorized
+			return nil, err
 		}
 	case proto.Connection_DISCORD:
 		token, err = discord.Authenticate(req.Code)
 		if err != nil {
-			return nil, unauthorized
+			return nil, err
 		}
 		oauthUser, err = discord.GetUserByToken(token)
 		if err != nil {
-			return nil, unauthorized
+			return nil, err
 		}
 	default:
 		return nil, status.Error(codes.InvalidArgument, "Invalid oauth service")
@@ -115,21 +115,21 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	)
 
 	if err := consCollection.FindOne(ctx, filter).Decode(connection); err != nil {
-		return nil, unauthorized
+		return nil, err
 	}
 
 	err = collection.FindOne(ctx, bson.M{ "_id": connection.UserId }).Decode(user)
 	if err != nil {
-		return nil, unauthorized
+		return nil, err
 	}
 
 	if user.ID != connection.UserId {
-		return nil, unauthorized
+		return nil, err
 	}
 
 	authToken, refreshedToken, err := jwt.CreateNewTokens(ctx, user.ID.Hex())
 	if err != nil {
-		return nil, unauthorized
+		return nil, err
 	}
 
 	return &proto.AuthResponse{
