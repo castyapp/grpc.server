@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
@@ -9,9 +10,12 @@ import (
 	"github.com/CastyLab/grpc.server/oauth"
 	"github.com/CastyLab/grpc.server/oauth/discord"
 	"github.com/CastyLab/grpc.server/oauth/google"
+	"github.com/CastyLab/grpc.server/oauth/spotify"
 	"github.com/CastyLab/grpc.server/services"
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
@@ -22,15 +26,30 @@ import (
 func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*proto.AuthResponse, error) {
 
 	var (
-		user         = new(models.User)
-		collection   = db.Connection.Collection("users")
-		unauthorized = status.Error(codes.Unauthenticated, "Unauthorized!")
+		user           = new(models.User)
+		collection     = db.Connection.Collection("users")
+		consCollection = db.Connection.Collection("connections")
+		unauthorized   = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
 
-	var oauthUser oauth.User
+	var (
+		token     *oauth2.Token
+		err       error
+		oauthUser oauth.User
+	)
+
 	switch req.Service {
-	case proto.OAUTHRequest_Google:
-		token, err := google.Authenticate(req.Code)
+	case proto.Connection_SPOTIFY:
+		token, err = spotify.Authenticate(req.Code)
+		if err != nil {
+			return nil, unauthorized
+		}
+		oauthUser, err = spotify.GetUserByToken(token)
+		if err != nil {
+			return nil, unauthorized
+		}
+	case proto.Connection_GOOGLE:
+		token, err = google.Authenticate(req.Code)
 		if err != nil {
 			return nil, unauthorized
 		}
@@ -38,8 +57,8 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		if err != nil {
 			return nil, unauthorized
 		}
-	case proto.OAUTHRequest_Discord:
-		token, err := discord.Authenticate(req.Code)
+	case proto.Connection_DISCORD:
+		token, err = discord.Authenticate(req.Code)
 		if err != nil {
 			return nil, unauthorized
 		}
@@ -49,6 +68,35 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		}
 	default:
 		return nil, unauthorized
+	}
+
+	filter := bson.M{
+		"service_user_id": oauthUser.GetUserId(),
+		"type":            req.Service,
+		"user_id":         user.ID,
+	}
+
+	consCount, err := consCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
+	}
+
+	if consCount == 0 {
+		connection := bson.M{
+			"service_user_id": oauthUser.GetUserId(),
+			"name":            oauthUser.GetFullname(),
+			"type":            req.Service,
+			"access_token":    token.AccessToken,
+			"refreshed_token": token.RefreshToken,
+			"show_activity":   true,
+			"user_id":         user.ID,
+			"created_at":      time.Now(),
+			"updated_at":      time.Now(),
+		}
+		if _, err := consCollection.InsertOne(ctx, connection); err != nil {
+			sentry.CaptureException(fmt.Errorf("could not create connection :%v", err))
+			return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
+		}
 	}
 
 	var (
@@ -96,15 +144,15 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		userObjectId = user.ID.Hex()
 	}
 
-	token, refreshedToken, err := jwt.CreateNewTokens(ctx, userObjectId)
+	authToken, refreshedToken, err := jwt.CreateNewTokens(ctx, userObjectId)
 	if err != nil {
 		return nil, unauthorized
 	}
 
 	return &proto.AuthResponse{
-		Status: "success",
-		Code:   http.StatusOK,
-		Token:  []byte(token),
+		Status:          "success",
+		Code:            http.StatusOK,
+		Token:           []byte(authToken),
 		RefreshedToken:  []byte(refreshedToken),
 	}, nil
 }

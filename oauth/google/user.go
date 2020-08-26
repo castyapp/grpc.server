@@ -16,6 +16,10 @@ type User struct {
 	Locale        string `json:"locale"`
 }
 
+func (u *User) GetUserId() string {
+	return u.ID
+}
+
 func (u *User) GetAvatar() string {
 	return u.Picture
 }

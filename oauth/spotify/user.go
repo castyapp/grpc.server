@@ -1,4 +1,4 @@
-package discord
+package spotify
 
 import (
 	"encoding/json"
@@ -9,16 +9,31 @@ import (
 	"net/http"
 )
 
+type ExplicitContent struct {
+	FilterEnabled  bool  `json:"filter_enabled"`
+	FilterLocked   bool  `json:"filter_locked"`
+}
+
 type User struct {
-	Id             string  `json:"id"`
-	Username       string  `json:"username"`
-	Verified       bool    `json:"verified"`
-	Locale         string  `json:"locale"`
-	MFAEnabled     bool    `json:"mfa_enabled"`
-	Flags          int     `json:"flags"`
-	Avatar         string  `json:"avatar"`
-	Discriminator  string  `json:"discriminator"`
-	Email          string  `json:"email"`
+	Id              string            `json:"id"`
+	DisplayName     string            `json:"display_name"`
+	Email           string            `json:"email"`
+	Country         string            `json:"country"`
+	Href            string            `json:"href"`
+	Images          []string          `json:"images"`
+	Product         string            `json:"product"`
+	Type            string            `json:"type"`
+	Uri             string            `json:"uri"`
+	ExplicitContent []ExplicitContent `json:"explicit_content"`
+
+	ExternalUrls struct{
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
+
+	Followers struct{
+		Href   string  `json:"href"`
+		Total  int     `json:"total"`
+	}
 }
 
 func (u *User) GetUserId() string {
@@ -26,7 +41,7 @@ func (u *User) GetUserId() string {
 }
 
 func (u *User) GetAvatar() string {
-	return u.Avatar
+	return ""
 }
 
 func (u *User) GetEmailAddress() string {
@@ -34,14 +49,14 @@ func (u *User) GetEmailAddress() string {
 }
 
 func (u *User) GetFullname() string {
-	return u.Username
+	return u.DisplayName
 }
 
 func GetUserByToken(token *oauth2.Token) (*User, error) {
 
 	request, err := http.NewRequest(
 		"GET",
-		"https://discordapp.com/api/v6/users/@me",
+		"https://api.spotify.com/v1/me",
 		nil,
 	)
 
@@ -65,13 +80,10 @@ func GetUserByToken(token *oauth2.Token) (*User, error) {
 		}
 
 		if resp.StatusCode == http.StatusOK {
-			user.Avatar = "https://cdn.discordapp.com/avatars/" + user.Id + "/" + user.Avatar + ".jpg"
 			return user, nil
 		}
 
 		return user, errors.New(string(body))
-
 	}
-
 	return nil, err
 }

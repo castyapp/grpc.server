@@ -1,4 +1,4 @@
-package discord
+package spotify
 
 import (
 	"context"
@@ -34,7 +34,7 @@ var (
 
 func init() {
 
-	jsonConfig, err = ioutil.ReadFile("./oauth/discord/client_secret.json")
+	jsonConfig, err = ioutil.ReadFile("./oauth/spotify/client_secret.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,5 +58,5 @@ func init() {
 
 func Authenticate(code string) (*oauth2.Token, error) {
 	mCtx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
-	return oauthClient.Exchange(mCtx, code, oauth2.AccessTypeOffline)
+	return oauthClient.Exchange(mCtx, code, oauth2.AccessTypeOnline)
 }

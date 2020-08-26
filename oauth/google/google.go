@@ -13,7 +13,11 @@ var (
 	err error
 	jsonConfig []byte
 	oauthClient *oauth2.Config
-	scopes = []string{ "profile", "email", "openid" }
+	scopes = []string{
+		"profile",
+		"email",
+		"openid",
+	}
 )
 
 func init() {
