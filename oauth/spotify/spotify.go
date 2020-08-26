@@ -26,9 +26,14 @@ var (
 	config = new(JsonConfig)
 	oauthClient *oauth2.Config
 	scopes = []string{
-		"profile",
-		"email",
-		"openid",
+		"user-read-private",
+		"user-read-email",
+		"user-read-playback-state",
+		"user-modify-playback-state",
+		"user-library-read",
+		"playlist-read-private",
+		"streaming",
+		"user-read-currently-playing",
 	}
 )
 
