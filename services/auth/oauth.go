@@ -11,14 +11,11 @@ import (
 	"github.com/CastyLab/grpc.server/oauth/discord"
 	"github.com/CastyLab/grpc.server/oauth/google"
 	"github.com/CastyLab/grpc.server/oauth/spotify"
-	"github.com/CastyLab/grpc.server/services"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
 	"net/http"
 	"time"
 )
@@ -26,17 +23,23 @@ import (
 func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*proto.AuthResponse, error) {
 
 	var (
+		err            error
+		authenticated  bool
+		token          *oauth2.Token
+		oauthUser      oauth.User
 		user           = new(models.User)
 		collection     = db.Connection.Collection("users")
 		consCollection = db.Connection.Collection("connections")
 		unauthorized   = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
 
-	var (
-		token     *oauth2.Token
-		err       error
-		oauthUser oauth.User
-	)
+	if req.AuthRequest != nil {
+		user, err = Authenticate(req.AuthRequest)
+		if err != nil {
+			return nil, err
+		}
+		authenticated = true
+	}
 
 	switch req.Service {
 	case proto.Connection_SPOTIFY:
@@ -67,84 +70,64 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 			return nil, unauthorized
 		}
 	default:
-		return nil, unauthorized
+		return nil, status.Error(codes.InvalidArgument, "Invalid oauth service")
 	}
 
-	filter := bson.M{
-		"service_user_id": oauthUser.GetUserId(),
-		"type":            req.Service,
-		"user_id":         user.ID,
-	}
-
-	consCount, err := consCollection.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
-	}
-
-	if consCount == 0 {
-		connection := bson.M{
+	if authenticated {
+		filter := bson.M{
 			"service_user_id": oauthUser.GetUserId(),
-			"name":            oauthUser.GetFullname(),
 			"type":            req.Service,
-			"access_token":    token.AccessToken,
-			"refreshed_token": token.RefreshToken,
-			"show_activity":   true,
 			"user_id":         user.ID,
-			"created_at":      time.Now(),
-			"updated_at":      time.Now(),
 		}
-		if _, err := consCollection.InsertOne(ctx, connection); err != nil {
-			sentry.CaptureException(fmt.Errorf("could not create connection :%v", err))
+		consCount, err := consCollection.CountDocuments(ctx, filter)
+		if err != nil {
 			return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
+		}
+		if consCount == 0 {
+			connection := bson.M{
+				"service_user_id": oauthUser.GetUserId(),
+				"name":            oauthUser.GetFullname(),
+				"type":            req.Service,
+				"access_token":    token.AccessToken,
+				"refreshed_token": token.RefreshToken,
+				"show_activity":   true,
+				"user_id":         user.ID,
+				"created_at":      time.Now(),
+				"updated_at":      time.Now(),
+			}
+			if _, err := consCollection.InsertOne(ctx, connection); err != nil {
+				sentry.CaptureException(fmt.Errorf("could not create connection :%v", err))
+				return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
+			}
+			return &proto.AuthResponse{
+				Status:  "success",
+				Code:    http.StatusOK,
+				Message: "Connection created successfully!",
+			}, nil
 		}
 	}
 
 	var (
-		userObjectId string
-		cursor = collection.FindOne(ctx, bson.M{
-			"email": oauthUser.GetEmailAddress(),
-		})
+		connection = new(models.Connection)
+		filter = bson.M{
+			"service_user_id": oauthUser.GetUserId(),
+		}
 	)
 
-	if err := cursor.Decode(&user); err != nil {
-
-		avatarName, err := services.SaveAvatarFromUrl(oauthUser.GetAvatar())
-		if err != nil {
-			log.Println(err)
-			avatarName = "default"
-		}
-
-		dbUser := bson.M{
-			"fullname":   oauthUser.GetFullname(),
-			"hash":       services.GenerateHash(),
-			"username":   services.RandomUserName(),
-			"email":      oauthUser.GetEmailAddress(),
-			"password":   models.HashPassword(services.RandomString(20)),
-			"is_active":  true,
-			"verified": false,
-			"is_staff": false,
-			"email_verified": false,
-			"email_token": services.RandomString(40),
-			"state":      int(proto.PERSONAL_STATE_OFFLINE),
-			"activity":   bson.M{},
-			"avatar":     avatarName,
-			"last_login": time.Now(),
-			"joined_at":  time.Now(),
-			"updated_at": time.Now(),
-		}
-
-		result, err := collection.InsertOne(ctx, dbUser)
-		if err != nil {
-			return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")
-		}
-		userObjectId = result.InsertedID.(primitive.ObjectID).Hex()
+	if err := consCollection.FindOne(ctx, filter).Decode(connection); err != nil {
+		return nil, unauthorized
 	}
 
-	if user.ID != nil {
-		userObjectId = user.ID.Hex()
+	err = collection.FindOne(ctx, bson.M{ "_id": connection.UserId }).Decode(user)
+	if err != nil {
+		return nil, unauthorized
 	}
 
-	authToken, refreshedToken, err := jwt.CreateNewTokens(ctx, userObjectId)
+	if user.ID != connection.UserId {
+		return nil, unauthorized
+	}
+
+	authToken, refreshedToken, err := jwt.CreateNewTokens(ctx, user.ID.Hex())
 	if err != nil {
 		return nil, unauthorized
 	}
