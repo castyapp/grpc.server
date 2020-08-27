@@ -13,6 +13,7 @@ import (
 	"github.com/CastyLab/grpc.server/oauth/spotify"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -72,59 +73,48 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 		return nil, status.Error(codes.InvalidArgument, "Invalid oauth service")
 	}
 
-	if authenticated {
-		filter := bson.M{
-			"service_user_id": oauthUser.GetUserId(),
-			"type":            req.Service,
-			"user_id":         user.ID,
-		}
-		consCount, err := consCollection.CountDocuments(ctx, filter)
-		if err != nil {
-			return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
-		}
-		if consCount == 0 {
-			connection := bson.M{
-				"service_user_id": oauthUser.GetUserId(),
-				"name":            oauthUser.GetFullname(),
-				"type":            req.Service,
-				"access_token":    token.AccessToken,
-				"refreshed_token": token.RefreshToken,
-				"show_activity":   true,
-				"user_id":         user.ID,
-				"created_at":      time.Now(),
-				"updated_at":      time.Now(),
-			}
-			if _, err := consCollection.InsertOne(ctx, connection); err != nil {
-				sentry.CaptureException(fmt.Errorf("could not create connection :%v", err))
-				return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
-			}
-			return &proto.AuthResponse{
-				Status:  "success",
-				Code:    http.StatusOK,
-				Message: "Connection created successfully!",
-			}, nil
-		} else {
-			return nil, status.Error(codes.AlreadyExists, "Connection already exists!")
-		}
-	}
-
 	var (
 		connection = new(models.Connection)
-		filter = bson.M{
-			"service_user_id": oauthUser.GetUserId(),
-		}
+		filter = bson.M{ "service_user_id": oauthUser.GetUserId() }
 	)
 
-	if err := consCollection.FindOne(ctx, filter).Decode(connection); err != nil {
-		return nil, err
+	if err = consCollection.FindOne(ctx, filter).Decode(connection); err != nil {
+		if err == mongo.ErrNoDocuments {
+			if authenticated {
+				connection := bson.M{
+					"service_user_id": oauthUser.GetUserId(),
+					"name":            oauthUser.GetFullname(),
+					"type":            req.Service,
+					"access_token":    token.AccessToken,
+					"refreshed_token": token.RefreshToken,
+					"show_activity":   true,
+					"user_id":         user.ID,
+					"created_at":      time.Now(),
+					"updated_at":      time.Now(),
+				}
+				if _, err := consCollection.InsertOne(ctx, connection); err != nil {
+					sentry.CaptureException(fmt.Errorf("could not create connection :%v", err))
+					return nil, status.Error(codes.Unavailable, "Could not create connection, Please try again later!")
+				}
+				return &proto.AuthResponse{
+					Status:  "success",
+					Code:    http.StatusOK,
+					Message: "Connection created successfully!",
+				}, nil
+			}
+		} else {
+			return nil, err
+		}
 	}
 
-	err = collection.FindOne(ctx, bson.M{ "_id": connection.UserId }).Decode(user)
-	if err != nil {
-		return nil, err
+	if authenticated {
+		if connection.UserId != user.ID {
+			return nil, status.Error(codes.AlreadyExists, "Connection already associated with another user!")
+		}
+		return nil, status.Error(codes.AlreadyExists, "Connection already exists!")
 	}
 
-	if user.ID != connection.UserId {
+	if err = collection.FindOne(ctx, bson.M{ "_id": connection.UserId }).Decode(user); err != nil {
 		return nil, err
 	}
 
