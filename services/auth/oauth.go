@@ -34,8 +34,7 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 	)
 
 	if req.AuthRequest != nil {
-		user, err = Authenticate(req.AuthRequest)
-		if err != nil {
+		if user, err = Authenticate(req.AuthRequest); err != nil {
 			return nil, unauthorized
 		}
 		authenticated = true
@@ -104,6 +103,8 @@ func (Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*pro
 				Code:    http.StatusOK,
 				Message: "Connection created successfully!",
 			}, nil
+		} else {
+			return nil, status.Error(codes.AlreadyExists, "Connection already exists!")
 		}
 	}
 
