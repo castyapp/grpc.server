@@ -322,7 +322,8 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		return nil, status.Error(codes.Internal, "Could not find theater!")
 	}
 
-	if result, err := collection.DeleteOne(ctx, bson.M{ "_id": mediaSourceObjectID, "user_id": user.ID }); err == nil {
+	result, err := collection.DeleteOne(ctx, bson.M{ "_id": mediaSourceObjectID, "user_id": user.ID })
+	if err == nil {
 		if result.DeletedCount == 1 {
 
 			// sending new media source to websocket
@@ -339,5 +340,5 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		}
 	}
 
-	return nil, status.Error(codes.Aborted, "Could not delete media source. Please try again later!")
+	return nil, fmt.Errorf("could not delete media source. %v", err)
 }
