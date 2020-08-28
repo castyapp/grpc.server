@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 )
 
-func NewProtoConnection(conn *models.Connection) (*proto.Connection, error) {
+func NewProtoConnection(conn *models.Connection) *proto.Connection {
 
 	createdAt,  _ := ptypes.TimestampProto(conn.CreatedAt)
 	updatedAt, _ := ptypes.TimestampProto(conn.UpdatedAt)
@@ -20,5 +20,5 @@ func NewProtoConnection(conn *models.Connection) (*proto.Connection, error) {
 		ShowActivity:   conn.ShowActivity,
 		CreatedAt:      createdAt,
 		UpdatedAt:      updatedAt,
-	}, nil
+	}
 }

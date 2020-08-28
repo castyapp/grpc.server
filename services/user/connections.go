@@ -9,7 +9,6 @@ import (
 	"github.com/CastyLab/grpc.server/oauth/spotify"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,7 +19,7 @@ import (
 func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionRequest) (*proto.ConnectionsResponse, error) {
 
 	var (
-		connection = new(proto.Connection)
+		connection = new(models.Connection)
 		collection = db.Connection.Collection("connections")
 	)
 
@@ -45,7 +44,7 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 	}
 
 	var (
-		updateFilter  = bson.M{"_id": connection.Id}
+		updateFilter  = bson.M{"_id": connection.ID}
 		updatePayload = bson.M{
 			"$set": bson.M{
 				"access_token": token.AccessToken,
@@ -61,12 +60,14 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 	}
 
 	if result.ModifiedCount == 1 {
+
 		connection.AccessToken = token.AccessToken
-		connection.UpdatedAt, _ = ptypes.TimestampProto(time.Now())
+		connection.UpdatedAt = time.Now()
+
 		return &proto.ConnectionsResponse{
 			Status:  "success",
 			Code:    http.StatusOK,
-			Result:  []*proto.Connection{connection},
+			Result:  []*proto.Connection{helpers.NewProtoConnection(connection)},
 		}, nil
 	}
 
@@ -100,11 +101,7 @@ func (s *Service) GetConnection(ctx context.Context, req *proto.ConnectionReques
 		if err := cursor.Decode(connection); err != nil {
 			continue
 		}
-		protoConnection, err := helpers.NewProtoConnection(connection)
-		if err != nil {
-			continue
-		}
-		connections = append(connections, protoConnection)
+		connections = append(connections, helpers.NewProtoConnection(connection))
 	}
 
 	return &proto.ConnectionsResponse{
@@ -137,11 +134,7 @@ func (s *Service) GetConnections(ctx context.Context, req *proto.AuthenticateReq
 		if err := cursor.Decode(connection); err != nil {
 			continue
 		}
-		protoConnection, err := helpers.NewProtoConnection(connection)
-		if err != nil {
-			continue
-		}
-		connections = append(connections, protoConnection)
+		connections = append(connections, helpers.NewProtoConnection(connection))
 	}
 
 	return &proto.ConnectionsResponse{
