@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	userEndpoint  = "https://api.spotify.com/v1/me"
+)
+
 type JsonConfig struct {
 	Web struct {
 		ClientId        string   `json:"client_id"`

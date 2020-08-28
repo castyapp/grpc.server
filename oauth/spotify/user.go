@@ -50,7 +50,7 @@ func (u *User) GetFullname() string {
 
 func GetUserByToken(token *oauth2.Token) (*User, error) {
 
-	request, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
+	request, err := http.NewRequest("GET", userEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
