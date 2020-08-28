@@ -46,7 +46,12 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 
 	var (
 		updateFilter  = bson.M{"_id": connection.Id}
-		updatePayload = bson.M{"access_token": token.AccessToken, "updated_at": time.Now()}
+		updatePayload = bson.M{
+			"$set": bson.M{
+				"access_token": token.AccessToken,
+				"updated_at": time.Now(),
+			},
+		}
 	)
 
 	result, err := collection.UpdateOne(ctx, updateFilter, updatePayload)
