@@ -8,7 +8,7 @@ import (
 
 func NewProtoConnection(conn *models.Connection) *proto.Connection {
 
-	createdAt,  _ := ptypes.TimestampProto(conn.CreatedAt)
+	createdAt, _ := ptypes.TimestampProto(conn.CreatedAt)
 	updatedAt, _ := ptypes.TimestampProto(conn.UpdatedAt)
 
 	return &proto.Connection{

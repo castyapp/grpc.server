@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type Token struct {
@@ -19,7 +20,7 @@ func RefreshToken(refreshToken string) (*Token, error) {
 	params.Set("grant_type", "refresh_token")
 	params.Set("refresh_token", refreshToken)
 
-	request, err := http.NewRequest(http.MethodPost, oauthClient.Endpoint.TokenURL, nil)
+	request, err := http.NewRequest(http.MethodPost, oauthClient.Endpoint.TokenURL, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	}
