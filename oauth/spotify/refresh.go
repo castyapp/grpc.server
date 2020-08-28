@@ -2,12 +2,16 @@ package spotify
 
 import (
 	"encoding/json"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 )
 
-func RefreshToken(refreshToken string) (*oauth2.Token, error) {
+type Token struct {
+	AccessToken  string  `json:"access_token"`
+	TokenType    string  `json:"token_type"`
+}
+
+func RefreshToken(refreshToken string) (*Token, error) {
 
 	params := url.Values{}
 	params.Set("client_id", oauthClient.ClientID)
@@ -27,7 +31,7 @@ func RefreshToken(refreshToken string) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	token := new(oauth2.Token)
+	token := new(Token)
 	if err := json.NewDecoder(response.Body).Decode(token); err != nil {
 		return nil, err
 	}
