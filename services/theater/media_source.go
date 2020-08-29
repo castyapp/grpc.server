@@ -208,6 +208,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 				Banner: poster,
 				Uri:    req.Media.Uri,
 				Length: req.Media.Length,
+				Artist: req.Media.Artist,
 				UserId: user.ID.Hex(),
 				CreatedAt: createdAt,
 				UpdatedAt: createdAt,
