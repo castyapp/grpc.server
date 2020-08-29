@@ -58,6 +58,7 @@ func NewMediaSourceProto(ms *models.MediaSource) *proto.MediaSource {
 		Banner:           ms.Banner,
 		Uri:              ms.Uri,
 		Length:           ms.Length,
+		Artist:           ms.Artist,
 		Subtitles:        make([]*proto.Subtitle, 0),
 		CreatedAt:        createdAt,
 		UpdatedAt:        updatedAt,

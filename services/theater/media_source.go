@@ -167,6 +167,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		"uri":                req.Media.Uri,
 		"length":             req.Media.Length,
 		"user_id":            user.ID,
+		"artist":             req.Media.Artist,
 		"created_at":         time.Now(),
 		"updated_at":         time.Now(),
 	}
