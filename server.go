@@ -4,18 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.server/config"
 	_ "github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/CastyLab/grpc.server/services/message"
 	"github.com/CastyLab/grpc.server/services/theater"
 	"github.com/CastyLab/grpc.server/services/user"
 	"github.com/getsentry/sentry-go"
-	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
-	"os"
 	"time"
 )
 
@@ -23,7 +22,7 @@ func main() {
 
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
-	if err := sentry.Init(sentry.ClientOptions{ Dsn: os.Getenv("SENTRY_DSN") }); err != nil {
+	if err := sentry.Init(sentry.ClientOptions{ Dsn: config.Map.Secrets.SentryDsn }); err != nil {
 		log.Fatal(err)
 	}
 

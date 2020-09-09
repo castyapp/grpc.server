@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
@@ -88,7 +89,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 
 func (s *Service) SavePosterFromUrl(url string) (string, error) {
 	var (
-		storagePath = os.Getenv("STORAGE_PATH")
+		storagePath = config.Map.StoragePath
 		posterName  = services.RandomNumber(20)
 	)
 	avatarFile, err := os.Create(fmt.Sprintf("%s/uploads/posters/%s.png", storagePath, posterName))

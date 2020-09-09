@@ -3,11 +3,10 @@ package db
 import (
 	"context"
 	"fmt"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/CastyLab/grpc.server/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
-	"os"
 	"time"
 )
 
@@ -19,16 +18,11 @@ func init() {
 
 	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
 
-	var (
-		host = os.Getenv("DB_HOST")
-		port = os.Getenv("DB_PORT")
-	)
-
 	opts := options.Client()
-	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%s", host, port))
+	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", config.Map.Secrets.Db.Host, config.Map.Secrets.Db.Port))
 	opts.SetAuth(options.Credential{
-		Username: os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASS"),
+		Username: config.Map.Secrets.Db.User,
+		Password: config.Map.Secrets.Db.Pass,
 		PasswordSet: true,
 	})
 
@@ -41,5 +35,5 @@ func init() {
 		log.Fatal(err)
 	}
 
-	Connection = client.Database(os.Getenv("DB_NAME"))
+	Connection = client.Database(config.Map.Secrets.Db.Name)
 }

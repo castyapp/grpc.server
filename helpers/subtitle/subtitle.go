@@ -3,9 +3,9 @@ package subtitle
 import (
 	"bytes"
 	"fmt"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/services"
 	"github.com/asticode/go-astisub"
-	_ "github.com/joho/godotenv/autoload"
 	"io/ioutil"
 	"mime/multipart"
 	"os"
@@ -46,9 +46,7 @@ func Save(sFile *multipart.FileHeader) (string, error) {
 		return "", err
 	}
 
-	storagePath := os.Getenv("STORAGE_PATH")
-
-	file, err := os.Create(fmt.Sprintf("%s/uploads/subtitles/%s.vtt", storagePath, subtitleName))
+	file, err := os.Create(fmt.Sprintf("%s/uploads/subtitles/%s.vtt", config.Map.StoragePath, subtitleName))
 	if err != nil {
 		return "", err
 	}
