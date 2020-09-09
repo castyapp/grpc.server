@@ -15,46 +15,51 @@ $ git clone https://github.com/CastyLab/grpc.server.git
 ```
 
 ## Configuraition
-Make a copy of `.env.example` for your own configuration. save it as `.env` file.
+Make a copy of `config.example.yml` for your own configuration. save it as `config.yml` in your work directory.
 ```bash
-$ cp .env.example .env
+$ cp config.example.yml config.yml
 ```
 
 ## Environments
 ### Mongodb configuration
 Put your mongodb connection here
-```env
-DB_HOST=localhost
-DB_PORT=27017
-DB_USER=root
-DB_PASS=secret
-DB_NAME=casty
+```yaml
+secrets:
+  db:
+    name: "casty"
+    host: "localhost"
+    port: 27017
+    user: "service"
+    pass: "super-secure-password"
 ```
 
 ### JWT configuration
 We use JWT for our authentication method
-```env
-JWT_EXPIRE_TIME=60 # in minutes
-JWT_REFRESH_TOKEN_VALID_TIME=7 # in days
-JWT_PRIVATE_KEY_PATH=./jwt/keys/app.key
-JWT_PUBLIC_KEY_PATH=./jwt/keys/app.key.pub
+```yaml
+secrets:
+  jwt:
+    expire_time: 60
+    refresh_token_valid_time: 7
+    private_key_path: "./config/jwt.key"
+    public_key_path: "./config/jwt.pub"
 ```
 
 to generate jwt [public/private] keys you can use `ssh-keygen`
 ```bash
-$ ssh-keygen -t rsa -N '' -b 4096 -m PEM -f ./jwt/keys/app.key &&\
-    openssl rsa -in ./jwt/keys/app.key -pubout -outform PEM &&\
-    -out ./jwt/keys/app.key.pub;
+$ ssh-keygen -t rsa -N '' -b 4096 -m PEM -f ./config/jwt.key &&\
+    openssl rsa -in ./config/jwt.key -pubout -outform PEM &&\
+    -out ./config/jwt.pub;
 ``` 
 
 ### Other environments
-```env
+```yaml
 # Storage path is used for upload avatars, banners etc...
 # This environment is useful for shared volumes between containers
-STORAGE_PATH=
+storage_path: "your-storage-path"
 
 # Sentry DSN path *optional
-SENTRY_DSN=
+secrets:
+    sentry_dsn: "your-sentry-project-dsn"
 ```
 
 You're ready to Go!

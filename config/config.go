@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"log"
@@ -46,7 +47,9 @@ type ConfMap struct {
 var Map *ConfMap
 
 func init() {
-	file, err := os.Open("./config/config.yml")
+	configFileName := flag.String("config-file", "config.yml", "config.yaml file")
+	flag.Parse()
+	file, err := os.Open(*configFileName)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("could not open config.yml file : %v", err))
 	}

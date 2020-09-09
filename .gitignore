@@ -3,8 +3,10 @@
 client
 data
 .DS_Store
+config.yml
+config.yaml
 config/*
-!config/config.example.yml
+!config.example.yml
 !config/config.go
 uploads
 Caddyfile
