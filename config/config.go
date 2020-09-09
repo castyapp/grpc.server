@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"log"
@@ -44,17 +43,16 @@ type ConfMap struct {
 	StoragePath string `yaml:"storage_path"`
 }
 
-var Map *ConfMap
+var Map = new(ConfMap)
 
-func init() {
-	configFileName := flag.String("config-file", "config.yml", "config.yaml file")
-	flag.Parse()
-	file, err := os.Open(*configFileName)
+func Load(filename string) error {
+	file, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("could not open config.yml file : %v", err))
+		return fmt.Errorf("could not open config file: %v", err)
 	}
 	if err := yaml.NewDecoder(file).Decode(&Map); err != nil {
-		log.Fatal(fmt.Sprintf("could not decode config file : %v", err))
+		return fmt.Errorf("could not decode config file: %v", err)
 	}
 	log.Printf("ConfigMap Loaded: [version: %s]", Map.App.Version)
+	return nil
 }

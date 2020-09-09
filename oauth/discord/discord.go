@@ -3,10 +3,10 @@ package discord
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/CastyLab/grpc.server/config"
 	"golang.org/x/oauth2"
 	"io/ioutil"
-	"log"
 	"time"
 )
 
@@ -32,15 +32,15 @@ var (
 	}
 )
 
-func init() {
+func Configure() error {
 
 	jsonConfig, err = ioutil.ReadFile(config.Map.Secrets.Oauth.Discord)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not read discord secret config file :%v", err)
 	}
 
 	if err := json.Unmarshal(jsonConfig, &jsonConfigMap); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not parse discord secret config file :%v", err)
 	}
 
 	oauthClient = &oauth2.Config{
@@ -54,6 +54,7 @@ func init() {
 		Scopes:       scopes,
 	}
 
+	return nil
 }
 
 func Authenticate(code string) (*oauth2.Token, error) {

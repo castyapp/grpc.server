@@ -6,7 +6,6 @@ import (
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -71,10 +70,10 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 	if result.ModifiedCount != 0 {
 
 		// sending updated user to websocket
-		err := internal.Client.UserService.SendUpdateUserEvent(req.AuthRequest, protoUser.Id)
-		if err != nil {
-			sentry.CaptureException(err)
-		}
+		//err := internal.Client.UserService.SendUpdateUserEvent(req.AuthRequest, protoUser.Id)
+		//if err != nil {
+		//	sentry.CaptureException(err)
+		//}
 
 		return &proto.GetUserResponse{
 			Status:  "success",

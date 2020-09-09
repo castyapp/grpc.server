@@ -2,11 +2,11 @@ package google
 
 import (
 	"context"
+	"fmt"
 	"github.com/CastyLab/grpc.server/config"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"io/ioutil"
-	"log"
 	"time"
 )
 
@@ -21,15 +21,16 @@ var (
 	}
 )
 
-func init() {
+func Configure() error {
 	jsonConfig, err = ioutil.ReadFile(config.Map.Secrets.Oauth.Google)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not read google secret config file :%v", err)
 	}
 	oauthClient, err = google.ConfigFromJSON(jsonConfig, scopes...)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not parse google secret config file :%v", err)
 	}
+	return nil
 }
 
 func Authenticate(code string) (*oauth2.Token, error) {

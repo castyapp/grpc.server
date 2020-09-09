@@ -8,7 +8,6 @@ import (
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
@@ -72,10 +71,10 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 	}
 
 	// sending new media source to websocket
-	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), mediaSourceId.Hex())
-	if err != nil {
-		sentry.CaptureException(err)
-	}
+	//err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), mediaSourceId.Hex())
+	//if err != nil {
+	//	sentry.CaptureException(err)
+	//}
 
 	mediaSourceProto := helpers.NewMediaSourceProto(mediaSource)
 
@@ -190,10 +189,10 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 	}
 
 	// sending new media source to websocket
-	err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), insertedID.Hex())
-	if err != nil {
-		sentry.CaptureException(err)
-	}
+	//err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), insertedID.Hex())
+	//if err != nil {
+	//	sentry.CaptureException(err)
+	//}
 
 	createdAt, _ := ptypes.TimestampProto(time.Now())
 
@@ -330,10 +329,10 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		if result.DeletedCount == 1 {
 
 			// sending new media source to websocket
-			err := internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), req.MediaSourceId)
-			if err != nil {
-				sentry.CaptureException(err)
-			}
+			//err := internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), req.MediaSourceId)
+			//if err != nil {
+			//	sentry.CaptureException(err)
+			//}
 
 			return &proto.Response{
 				Status:  "success",
