@@ -12,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
 	"net/http"
 )
 
@@ -107,9 +106,6 @@ func (s *Service) UpdatePassword(ctx context.Context, req *proto.UpdatePasswordR
 	if req.NewPassword != req.VerifyNewPassword {
 		return nil, status.Error(codes.InvalidArgument, "Passwords does not match!")
 	}
-
-	log.Println(models.HashPassword(req.VerifyNewPassword))
-	log.Println(req.VerifyNewPassword)
 
 	var (
 		filter    = bson.M{"_id": user.ID}

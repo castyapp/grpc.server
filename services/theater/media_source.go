@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
@@ -88,7 +89,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 
 func (s *Service) SavePosterFromUrl(url string) (string, error) {
 	var (
-		storagePath = os.Getenv("STORAGE_PATH")
+		storagePath = config.Map.StoragePath
 		posterName  = services.RandomNumber(20)
 	)
 	avatarFile, err := os.Create(fmt.Sprintf("%s/uploads/posters/%s.png", storagePath, posterName))
@@ -167,6 +168,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		"uri":                req.Media.Uri,
 		"length":             req.Media.Length,
 		"user_id":            user.ID,
+		"artist":             req.Media.Artist,
 		"created_at":         time.Now(),
 		"updated_at":         time.Now(),
 	}
@@ -207,6 +209,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 				Banner: poster,
 				Uri:    req.Media.Uri,
 				Length: req.Media.Length,
+				Artist: req.Media.Artist,
 				UserId: user.ID.Hex(),
 				CreatedAt: createdAt,
 				UpdatedAt: createdAt,
@@ -322,7 +325,8 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		return nil, status.Error(codes.Internal, "Could not find theater!")
 	}
 
-	if result, err := collection.DeleteOne(ctx, bson.M{ "_id": mediaSourceObjectID, "user_id": user.ID }); err == nil {
+	result, err := collection.DeleteOne(ctx, bson.M{ "_id": mediaSourceObjectID, "user_id": user.ID })
+	if err == nil {
 		if result.DeletedCount == 1 {
 
 			// sending new media source to websocket
@@ -339,5 +343,5 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		}
 	}
 
-	return nil, status.Error(codes.Aborted, "Could not delete media source. Please try again later!")
+	return nil, fmt.Errorf("could not delete media source. %v", err)
 }

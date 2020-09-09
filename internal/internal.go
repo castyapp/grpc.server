@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/CastyLab/grpc.server/internal/services/theater"
 	"github.com/CastyLab/grpc.server/internal/services/user"
-	_ "github.com/joho/godotenv/autoload"
 	"net"
 	"net/http"
 	"os"

@@ -17,6 +17,7 @@ type MediaSource struct {
 	Uri             string                    `bson:"uri" json:"uri,omitempty"`
 
 	Length          int64                     `bson:"length" json:"length,omitempty"`
+	Artist          string                    `bson:"artist" json:"artist,omitempty"`
 
 	Subtitles       []*Subtitle               `json:"subtitles,omitempty"`
 

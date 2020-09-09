@@ -5,31 +5,28 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/getsentry/sentry-go"
-	_ "github.com/joho/godotenv/autoload"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"io/ioutil"
 	"log"
-	"os"
-	"strconv"
 	"time"
 )
 
 var (
-	expireTimeInt,
-	expireTimeRefreshedTokenInt int
-
 	verifyKey *rsa.PublicKey
 	signKey   *rsa.PrivateKey
 
 	// location of the files used for signing and verification
-	privKeyPath = os.Getenv("JWT_PRIVATE_KEY_PATH") // `$ openssl genrsa -out app.rsa 2048`
-	pubKeyPath  = os.Getenv("JWT_PUBLIC_KEY_PATH") // `$ openssl rsa -in app.rsa -pubout > app.rsa.pub`
+	privKeyPath = config.Map.Secrets.JWT.PrivateKeyPath // `$ openssl genrsa -out app.rsa 2048`
+	pubKeyPath  = config.Map.Secrets.JWT.PublicKeyPath // `$ openssl rsa -in app.rsa -pubout > app.rsa.pub`
+
+	expireTimeInt = config.Map.Secrets.JWT.ExpireTime
+	expireTimeRefreshedTokenInt = config.Map.Secrets.JWT.RefreshTokenValidTime
 
 	// mongodb refreshed tokens collection
 	usersCollection = db.Connection.Collection("users")
@@ -56,16 +53,6 @@ func init() {
 	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	expireTimeRefreshedTokenInt, err = strconv.Atoi(os.Getenv("JWT_REFRESH_TOKEN_VALID_TIME"))
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-
-	expireTimeInt, err = strconv.Atoi(os.Getenv("JWT_EXPIRE_TIME"))
-	if err != nil {
-		sentry.CaptureException(err)
 	}
 }
 

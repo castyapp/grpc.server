@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/CastyLab/grpc.server/config"
 	"io"
 	"math/rand"
 	"net/http"
@@ -21,7 +22,7 @@ func RandomString(length int) string {
 
 func SaveAvatarFromUrl(url string) (string, error) {
 	var (
-		storagePath = os.Getenv("STORAGE_PATH")
+		storagePath = config.Map.StoragePath
 		avatarName  = RandomNumber(20)
 	)
 	avatarFile, err := os.Create(fmt.Sprintf("%s/uploads/avatars/%s.png", storagePath, avatarName))

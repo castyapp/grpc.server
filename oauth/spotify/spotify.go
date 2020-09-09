@@ -3,11 +3,15 @@ package spotify
 import (
 	"context"
 	"encoding/json"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/CastyLab/grpc.server/config"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"log"
 	"time"
+)
+
+const (
+	userEndpoint  = "https://api.spotify.com/v1/me"
 )
 
 type JsonConfig struct {
@@ -23,7 +27,7 @@ type JsonConfig struct {
 var (
 	err error
 	jsonConfig []byte
-	config = new(JsonConfig)
+	jsonConfigMap = new(JsonConfig)
 	oauthClient *oauth2.Config
 	scopes = []string{
 		"user-read-private",
@@ -39,23 +43,23 @@ var (
 
 func init() {
 
-	jsonConfig, err = ioutil.ReadFile("./oauth/spotify/client_secret.json")
+	jsonConfig, err = ioutil.ReadFile(config.Map.Secrets.Oauth.Spotify)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := json.Unmarshal(jsonConfig, &config); err != nil {
+	if err := json.Unmarshal(jsonConfig, &jsonConfigMap); err != nil {
 		log.Fatal(err)
 	}
 
 	oauthClient = &oauth2.Config{
-		ClientID:     config.Web.ClientId,
-		ClientSecret: config.Web.ClientSecret,
+		ClientID:     jsonConfigMap.Web.ClientId,
+		ClientSecret: jsonConfigMap.Web.ClientSecret,
 		Endpoint:     oauth2.Endpoint{
-			AuthURL:  config.Web.AuthUri,
-			TokenURL: config.Web.TokenUri,
+			AuthURL:  jsonConfigMap.Web.AuthUri,
+			TokenURL: jsonConfigMap.Web.TokenUri,
 		},
-		RedirectURL:  config.Web.RedirectUri,
+		RedirectURL:  jsonConfigMap.Web.RedirectUri,
 		Scopes:       scopes,
 	}
 

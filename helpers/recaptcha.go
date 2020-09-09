@@ -3,10 +3,9 @@ package helpers
 import (
 	"encoding/json"
 	"errors"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/CastyLab/grpc.server/config"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -22,7 +21,7 @@ func VerifyRecaptcha(code string) (bool, error) {
 	verifyResp := new(VerifyResponse)
 
 	params := url.Values{}
-	params.Add("secret", os.Getenv("RECAPTCHA_SECRET_KEY"))
+	params.Add("secret", config.Map.Secrets.HcaptchaSecret)
 	params.Add("response", code)
 
 	request, err := http.NewRequest("POST", "https://www.google.com/recaptcha/api/siteverify", strings.NewReader(params.Encode()))
