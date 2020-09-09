@@ -6,9 +6,7 @@ import (
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
@@ -139,13 +137,13 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	if updateResult.ModifiedCount == 1 {
 
-		friendID := friendRequest.FriendId.Hex()
-		if friendRequest.FriendId.Hex() == user.ID.Hex() {
-			friendID = friendRequest.UserId.Hex()
-		}
+		//friendID := friendRequest.FriendId.Hex()
+		//if friendRequest.FriendId.Hex() == user.ID.Hex() {
+		//	friendID = friendRequest.UserId.Hex()
+		//}
 
 		// send new friend request event to friend websocket clients
-		_ = internal.Client.UserService.AcceptNotificationEvent(req.AuthRequest, user, friendID)
+		//_ = internal.Client.UserService.AcceptNotificationEvent(req.AuthRequest, user, friendID)
 
 		return &proto.Response{
 			Status:  "success",
@@ -235,10 +233,10 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	}
 
 	// send new friend request event to friend websocket clients
-	err = internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
-	if err != nil {
-		sentry.CaptureException(err)
-	}
+	//err = internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
+	//if err != nil {
+	//	sentry.CaptureException(err)
+	//}
 
 	return &proto.Response{
 		Status:  "success",

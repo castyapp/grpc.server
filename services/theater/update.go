@@ -5,9 +5,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -55,10 +53,10 @@ func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthReque
 			return nil, failedResponse
 		}
 		// sending updated entity through websocket
-		err := internal.Client.TheaterService.SendTheaterUpdateEvent(req.AuthRequest, theater.ID.Hex())
-		if err != nil {
-			sentry.CaptureException(err)
-		}
+		//err := internal.Client.TheaterService.SendTheaterUpdateEvent(req.AuthRequest, theater.ID.Hex())
+		//if err != nil {
+		//	sentry.CaptureException(err)
+		//}
 	}
 
 	return &proto.Response{

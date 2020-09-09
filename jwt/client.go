@@ -13,13 +13,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"io/ioutil"
-	"log"
 	"time"
 )
 
 var (
+	pubKeyPath string
+	expireTimeInt int
+	privKeyPath string
+	signKey *rsa.PrivateKey
 	verifyKey *rsa.PublicKey
-	signKey   *rsa.PrivateKey
+	expireTimeRefreshedTokenInt int
+)
+
+// read the key files before starting http handlers
+func Load() error {
 
 	// location of the files used for signing and verification
 	privKeyPath = config.Map.Secrets.JWT.PrivateKeyPath // `$ openssl genrsa -out app.rsa 2048`
@@ -28,32 +35,27 @@ var (
 	expireTimeInt = config.Map.Secrets.JWT.ExpireTime
 	expireTimeRefreshedTokenInt = config.Map.Secrets.JWT.RefreshTokenValidTime
 
-	// mongodb refreshed tokens collection
-	usersCollection = db.Connection.Collection("users")
-	collection = db.Connection.Collection("refreshed_tokens")
-)
-
-// read the key files before starting http handlers
-func init() {
 	signBytes, err := ioutil.ReadFile(privKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not open jwt private key file: %v", err)
 	}
 
 	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not parse jwt private sign key: %v", err)
 	}
 
 	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not open jwt public key file: %v", err)
 	}
 
 	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not parse jwt public verification key: %v", err)
 	}
+
+	return nil
 }
 
 func CreateNewTokens(ctx context.Context, userid string) (token, refreshedToken string, err error) {
@@ -100,7 +102,11 @@ func createRefreshToken(ctx context.Context, userid string) (refreshTokenString 
 
 	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeRefreshedTokenInt))
 
-	var result *mongo.InsertOneResult
+	var (
+		result *mongo.InsertOneResult
+		collection = db.Connection.Collection("refreshed_tokens")
+	)
+
 	result, err = collection.InsertOne(ctx, bson.M{
 		"user_id": userObjectId,
 		"valid": true,
@@ -128,7 +134,10 @@ func createRefreshToken(ctx context.Context, userid string) (refreshTokenString 
 
 func checkRefreshToken(ctx context.Context, id string) (*models.RefreshedToken, error) {
 
-	refreshedToken := new(models.RefreshedToken)
+	var (
+		refreshedToken = new(models.RefreshedToken)
+		collection = db.Connection.Collection("refreshed_tokens")
+	)
 
 	refreshedTokenObjectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -202,7 +211,11 @@ func RefreshToken(ctx context.Context, refreshTokenString string) (token, refres
 
 func deleteRefreshToken(ctx context.Context, jti primitive.ObjectID) (err error) {
 
-	var result *mongo.DeleteResult
+	var (
+		result *mongo.DeleteResult
+		collection = db.Connection.Collection("refreshed_tokens")
+	)
+
 	result, err = collection.DeleteOne(ctx, bson.M{ "_id": jti })
 	if err != nil {
 		return
@@ -247,7 +260,9 @@ func DecodeAuthToken(token []byte) (user *models.User, err error) {
 		return nil, fmt.Errorf("invalid user id")
 	}
 
+	usersCollection := db.Connection.Collection("users")
 	user = new(models.User)
+
 	if err := usersCollection.FindOne(ctx, bson.M{"_id": objectId}).Decode(&user); err != nil {
 		return nil, fmt.Errorf("invalid user")
 	}

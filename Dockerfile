@@ -17,12 +17,13 @@ RUN mkdir /code
 # Adding project to work directory
 ADD . /code
 
+RUN mkdir /config
+
 # Removing old JWT keys
-RUN rm -rf /code/config/jwt.key\
-    /code/config/jwt.pub
+RUN rm -rf /config/jwt.key /config/jwt.pub
 
 # Generate jwt keys
-RUN cd /code/config && ssh-keygen -t rsa -N '' -b 4096 -m PEM -f jwt.key &&\
+RUN cd /config && ssh-keygen -t rsa -N '' -b 4096 -m PEM -f jwt.key &&\
     openssl rsa -in jwt.key -pubout -outform PEM -out jwt.pub;
 
 # Choosing work directory
@@ -33,4 +34,5 @@ RUN go build -o casty.gRPC.server .
 
 EXPOSE 55283
 
-CMD ["./casty.gRPC.server", "-port", "55283"]
+ENTRYPOINT ["./casty.gRPC.server"]
+CMD ["--port", "55283"]

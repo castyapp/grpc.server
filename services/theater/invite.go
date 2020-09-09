@@ -5,9 +5,7 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/internal"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
@@ -99,13 +97,13 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		return nil, emptyResponse
 	}
 
-	for _, friend := range friends {
-		// send a new notification event to friend
-		err := internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
-		if err != nil {
-			sentry.CaptureException(err)
-		}
-	}
+	//for _, friend := range friends {
+	//	// send a new notification event to friend
+	//	err := internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
+	//	if err != nil {
+	//		sentry.CaptureException(err)
+	//	}
+	//}
 
 	return &proto.Response{
 		Code:     http.StatusOK,

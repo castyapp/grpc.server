@@ -6,7 +6,6 @@ import (
 	"github.com/CastyLab/grpc.server/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"time"
 )
 
@@ -14,7 +13,7 @@ var (
 	Connection *mongo.Database
 )
 
-func init() {
+func Configure() error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
 
@@ -28,12 +27,13 @@ func init() {
 
 	client, err := mongo.NewClient(opts)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not create new mongodb client: %v", err)
 	}
 
 	if err := client.Connect(ctx); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not connect to mongodb client: %v", err)
 	}
 
 	Connection = client.Database(config.Map.Secrets.Db.Name)
+	return nil
 }
