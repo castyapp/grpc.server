@@ -2,20 +2,16 @@ FROM golang:1.14
 
 LABEL maintainer="Alireza Josheghani <josheghani.dev@gmail.com>"
 
-ARG DEBIAN_FRONTEND=noninteractive
-
 # Creating work directory
-WORKDIR /code
+WORKDIR /app
 
 # Adding project to work directory
-ADD . /code
-
-RUN mkdir /config
+ADD . /app
 
 # build project
 RUN go build -o server .
 
 EXPOSE 55283
 
-ENTRYPOINT ["/code/server"]
+ENTRYPOINT ["/app/server"]
 CMD ["--port", "55283"]

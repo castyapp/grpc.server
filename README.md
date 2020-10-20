@@ -3,6 +3,16 @@
 
 * **What is gRPC and why we're using it?** According to [gRPC official website](https://grpc.io/): <br/> gRPC is a modern open source high performance RPC framework that can run in any environment. It can efficiently connect services in and across data centers with pluggable support for load balancing, tracing, health checking and authentication. It is also applicable in last mile of distributed computing to connect devices, mobile applications and browsers to backend services.
 
+## Pull Docker Image
+```bash
+$ docker pull castylab/grpc:latest
+```
+
+## Run docker container
+```bash
+$ docker run -p 55283:55283 castylab/grpc
+```
+
 ## Prerequisites
 
 * First, ensure that you have installed Go 1.11 or higher since we need the support for Go modules via go mod. [Go modules via `go mod`](https://github.com/golang/go/wiki/Modules)
@@ -40,16 +50,9 @@ secrets:
   jwt:
     expire_time: 60
     refresh_token_valid_time: 7
-    private_key_path: "./config/jwt.key"
-    public_key_path: "./config/jwt.pub"
+    access_token_secret: "super-secure-access-token-secret"
+    refresh_token_secret: "super-secure-refresh-token-secret"
 ```
-
-to generate jwt [public/private] keys you can use `ssh-keygen`
-```bash
-$ ssh-keygen -t rsa -N '' -b 4096 -m PEM -f ./config/jwt.key &&\
-    openssl rsa -in ./config/jwt.key -pubout -outform PEM &&\
-    -out ./config/jwt.pub;
-``` 
 
 ### Other environments
 ```yaml

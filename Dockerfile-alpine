@@ -1,28 +1,22 @@
-FROM golang:1.14 as builder
+FROM golang:1.14-alpine AS builder
 
 LABEL maintainer="Alireza Josheghani <josheghani.dev@gmail.com>"
 
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Choosing work directory
-WORKDIR /code
+# Creating work directory
+WORKDIR /app
 
 # Adding project to work directory
-ADD . /code
-
-RUN mkdir /config
+ADD . /app
 
 # build project
 RUN go build -o server .
 
-FROM alpine
+FROM alpine:latest
 
-WORKDIR /code
-
-COPY --from=builder /config /config
-COPY --from=builder /code/server .
+WORKDIR /app
+COPY --from=builder /app/server /app
 
 EXPOSE 55283
 
-ENTRYPOINT ["/code/server"]
+ENTRYPOINT ["/app/server"]
 CMD ["--port", "55283"]
