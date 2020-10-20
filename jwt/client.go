@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"context"
-	"crypto/rsa"
 	"errors"
 	"fmt"
 	"github.com/CastyLab/grpc.server/config"
@@ -12,66 +11,37 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"io/ioutil"
 	"time"
 )
 
 var (
-	pubKeyPath string
-	expireTimeInt int
-	privKeyPath string
-	signKey *rsa.PrivateKey
-	verifyKey *rsa.PublicKey
+	expireTimeInt,
 	expireTimeRefreshedTokenInt int
+
+	accessTokenSecret,
+	refreshTokenSecret []byte
 )
 
 // read the key files before starting http handlers
 func Load() error {
-
-	// location of the files used for signing and verification
-	privKeyPath = config.Map.Secrets.JWT.PrivateKeyPath // `$ openssl genrsa -out app.rsa 2048`
-	pubKeyPath  = config.Map.Secrets.JWT.PublicKeyPath // `$ openssl rsa -in app.rsa -pubout > app.rsa.pub`
-
 	expireTimeInt = config.Map.Secrets.JWT.ExpireTime
 	expireTimeRefreshedTokenInt = config.Map.Secrets.JWT.RefreshTokenValidTime
-
-	signBytes, err := ioutil.ReadFile(privKeyPath)
-	if err != nil {
-		return fmt.Errorf("could not open jwt private key file: %v", err)
-	}
-
-	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
-	if err != nil {
-		return fmt.Errorf("could not parse jwt private sign key: %v", err)
-	}
-
-	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
-	if err != nil {
-		return fmt.Errorf("could not open jwt public key file: %v", err)
-	}
-
-	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
-	if err != nil {
-		return fmt.Errorf("could not parse jwt public verification key: %v", err)
-	}
-
+	accessTokenSecret = []byte(config.Map.Secrets.JWT.AccessTokenSecret)
+	refreshTokenSecret = []byte(config.Map.Secrets.JWT.RefreshTokenSecret)
 	return nil
 }
 
 func CreateNewTokens(ctx context.Context, userid string) (token, refreshedToken string, err error) {
-
 	//generate the auth token
 	token, err = createAuthToken(userid)
 	if err != nil {
 		return
 	}
-
 	// generate the refresh token
 	refreshedToken, err = createRefreshToken(ctx, userid)
 	if err != nil {
 		return
 	}
-
 	return
 }
 
@@ -79,16 +49,14 @@ func createAuthToken(userid string) (token string, err error) {
 
 	authTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeInt)).Unix()
 
-	authClaims := jwt.StandardClaims{
+	// create a signer for rsa 256
+	authJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Subject: userid,
 		ExpiresAt: authTokenExp,
-	}
-
-	// create a signer for rsa 256
-	authJwt := jwt.NewWithClaims(jwt.GetSigningMethod("RS256"), authClaims)
+	})
 
 	// generate the auth token string
-	token, err = authJwt.SignedString(signKey)
+	token, err = authJwt.SignedString(accessTokenSecret)
 	return
 }
 
@@ -118,17 +86,16 @@ func createRefreshToken(ctx context.Context, userid string) (refreshTokenString 
 	}
 
 	resultID := result.InsertedID.(primitive.ObjectID)
-	refreshClaims := jwt.StandardClaims{
+
+	// create a signer for rsa 256
+	refreshJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Id: resultID.Hex(),
 		Subject: userid,
 		ExpiresAt: refreshTokenExp.Unix(),
-	}
-
-	// create a signer for rsa 256
-	refreshJwt := jwt.NewWithClaims(jwt.GetSigningMethod("RS256"), refreshClaims)
+	})
 
 	// generate the refresh token string
-	refreshTokenString, err = refreshJwt.SignedString(signKey)
+	refreshTokenString, err = refreshJwt.SignedString(refreshTokenSecret)
 	return
 }
 
@@ -160,7 +127,7 @@ func RefreshToken(ctx context.Context, refreshTokenString string) (token, refres
 
 	var refreshToken *jwt.Token
 	refreshToken, err = jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return verifyKey, nil
+		return refreshTokenSecret, nil
 	})
 
 	if refreshToken == nil {
@@ -234,7 +201,7 @@ func DecodeAuthToken(token []byte) (user *models.User, err error) {
 	// now, check that it matches what's in the auth token claims
 	var authToken *jwt.Token
 	authToken, err = jwt.ParseWithClaims(string(token), &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return verifyKey, nil
+		return accessTokenSecret, nil
 	})
 
 	if authToken == nil || authToken.Claims == nil {
