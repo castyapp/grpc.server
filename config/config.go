@@ -34,8 +34,8 @@ type ConfMap struct {
 		JWT struct {
 			ExpireTime            int    `yaml:"expire_time"`
 			RefreshTokenValidTime int    `yaml:"refresh_token_valid_time"`
-			PrivateKeyPath        string `yaml:"private_key_path"`
-			PublicKeyPath         string `yaml:"public_key_path"`
+			AccessTokenSecret     string `yaml:"access_token_secret"`
+			RefreshTokenSecret     string `yaml:"refresh_token_secret"`
 		} `yaml:"jwt"`
 		SentryDsn      string `yaml:"sentry_dsn"`
 		HcaptchaSecret string `yaml:"hcaptcha_secret"`
