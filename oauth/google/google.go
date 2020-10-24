@@ -34,6 +34,7 @@ func Configure() error {
 }
 
 func Authenticate(code string) (*oauth2.Token, error) {
-	mCtx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
+	mCtx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
+	defer cancel()
 	return oauthClient.Exchange(mCtx, code, oauth2.AccessTypeOffline)
 }

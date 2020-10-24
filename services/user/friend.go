@@ -21,7 +21,6 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		dbFriendUserObject = new(models.User)
 		userCollection     = db.Connection.Collection("users")
 		friendsCollection  = db.Connection.Collection("friends")
-		failedResponse     = status.Error(codes.Internal, "Could not get the friend, Please try again later!")
 	)
 
 	user, err := auth.Authenticate(req.AuthRequest)
@@ -58,15 +57,10 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		return nil, status.Error(codes.NotFound, "Could not find friend!")
 	}
 
-	friendUser, err := helpers.NewProtoUser(dbFriendUserObject)
-	if err != nil {
-		return nil, failedResponse
-	}
-
 	return &proto.FriendResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
-		Result:  friendUser,
+		Result:  helpers.NewProtoUser(dbFriendUserObject),
 	}, nil
 }
 

@@ -3,8 +3,10 @@ package theater
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -97,13 +99,12 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		return nil, emptyResponse
 	}
 
-	//for _, friend := range friends {
-	//	// send a new notification event to friend
-	//	err := internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
-	//	if err != nil {
-	//		sentry.CaptureException(err)
-	//	}
-	//}
+	for _, friend := range friends {
+		event, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_NOTIFICATION, &proto.NotificationMsgEvent{})
+		if err == nil {
+			helpers.SendEventToUser(ctx, event.Bytes(), &proto.User{Id: friend.ID.Hex()})
+		}
+	}
 
 	return &proto.Response{
 		Code:     http.StatusOK,

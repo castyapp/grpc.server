@@ -8,6 +8,7 @@ import (
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/jwt"
 	"github.com/CastyLab/grpc.server/oauth"
+	"github.com/CastyLab/grpc.server/redis"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/CastyLab/grpc.server/services/message"
 	"github.com/CastyLab/grpc.server/services/theater"
@@ -42,6 +43,10 @@ func init() {
 		log.Fatal(fmt.Errorf("could not load config: %v", err))
 	}
 
+	if err := redis.Configure(); err != nil {
+		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
+	}
+
 	if err := sentry.Init(sentry.ClientOptions{ Dsn: config.Map.Secrets.SentryDsn }); err != nil {
 		log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
 	}
@@ -68,9 +73,17 @@ func init() {
 
 func main() {
 
-	// Since sentry emits events in the background we need to make sure
-	// they are sent before we shut down
-	defer sentry.Flush(time.Second * 5)
+	defer func() {
+
+		// Since sentry emits events in the background we need to make sure
+		// they are sent before we shut down
+		sentry.Flush(time.Second * 5)
+
+		if err := redis.Close(); err != nil {
+			log.Println(fmt.Errorf("could not close redis connection: %v", err))
+		}
+
+	}()
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {

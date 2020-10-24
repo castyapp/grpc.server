@@ -3,8 +3,10 @@ package theater
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
@@ -52,11 +54,10 @@ func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthReque
 		if _, err = collection.UpdateOne(ctx, bson.M{ "_id": theater.ID }, bson.M{ "$set": updateMap }); err != nil {
 			return nil, failedResponse
 		}
-		// sending updated entity through websocket
-		//err := internal.Client.TheaterService.SendTheaterUpdateEvent(req.AuthRequest, theater.ID.Hex())
-		//if err != nil {
-		//	sentry.CaptureException(err)
-		//}
+		event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_UPDATED, req.Theater)
+		if err == nil {
+			helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater)
+		}
 	}
 
 	return &proto.Response{

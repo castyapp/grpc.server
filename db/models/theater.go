@@ -29,3 +29,9 @@ type Follow struct {
 	CreatedAt          time.Time                  `bson:"created_at, omitempty" json:"created_at, omitempty"`
 	UpdatedAt          time.Time                  `bson:"updated_at, omitempty" json:"updated_at, omitempty"`
 }
+
+type TheaterMember struct {
+	ID                 *primitive.ObjectID        `bson:"_id, omitempty" json:"id, omitempty"`
+	TheaterId          *primitive.ObjectID        `bson:"theater_id, omitempty" json:"theater_id, omitempty"`
+	UserId             *primitive.ObjectID        `bson:"user_id, omitempty" json:"user_id, omitempty"`
+}

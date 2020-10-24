@@ -3,11 +3,11 @@ package user
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,6 +25,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 	if err != nil {
 		return nil, err
 	}
+	protoUser := helpers.NewProtoUser(user)
 
 	filter := bson.M{"_id": user.ID}
 	setUpdate := bson.M{}
@@ -38,16 +39,11 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 	}
 
 	if len(setUpdate) == 0 {
-		protoUser, err := helpers.NewProtoUser(user)
-		if err != nil {
-			sentry.CaptureException(err)
-			return nil, status.Error(codes.Internal, "Internal server error!")
-		}
 		return &proto.GetUserResponse{
 			Status:  "success",
 			Code:    http.StatusOK,
 			Message: "User updated successfully!",
-			Result:  protoUser,
+			Result:  helpers.NewProtoUser(user),
 		}, nil
 	}
 
@@ -62,24 +58,26 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 		return nil, failedResponse
 	}
 
-	protoUser, err := helpers.NewProtoUser(dbUpdatedUser)
-	if err != nil {
-		return nil, failedResponse
-	}
-
 	if result.ModifiedCount != 0 {
 
-		// sending updated user to websocket
-		//err := internal.Client.UserService.SendUpdateUserEvent(req.AuthRequest, protoUser.Id)
-		//if err != nil {
-		//	sentry.CaptureException(err)
-		//}
+		// update self user with new activity to other clients
+		buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_USER_UPDATED, protoUser)
+		if err == nil {
+			helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+		}
+
+		// update friends with new activity of user
+		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_USER_UPDATED, protoUser); err == nil {
+			if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
+				return nil, err
+			}
+		}
 
 		return &proto.GetUserResponse{
 			Status:  "success",
 			Code:    http.StatusOK,
 			Message: "User updated successfully!",
-			Result:  protoUser,
+			Result:  helpers.NewProtoUser(dbUpdatedUser),
 		}, nil
 	}
 

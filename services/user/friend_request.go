@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
@@ -52,14 +53,9 @@ func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.Authe
 			continue
 		}
 
-		friendProto, err := helpers.NewProtoUser(dbFriend)
-		if err != nil {
-			continue
-		}
-
 		friendRequests = append(friendRequests, &proto.FriendRequest{
 			RequestId: friend.ID.Hex(),
-			Friend: friendProto,
+			Friend:    helpers.NewProtoUser(dbFriend),
 		})
 	}
 
@@ -83,6 +79,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	if err != nil {
 		return nil, err
 	}
+	protoUser := helpers.NewProtoUser(user)
 
 	frObjectID, err := primitive.ObjectIDFromHex(req.RequestId)
 	if err != nil {
@@ -137,13 +134,21 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	if updateResult.ModifiedCount == 1 {
 
-		//friendID := friendRequest.FriendId.Hex()
-		//if friendRequest.FriendId.Hex() == user.ID.Hex() {
-		//	friendID = friendRequest.UserId.Hex()
-		//}
+		// send event to self user clients
+		pms := &proto.FriendRequestAcceptedMsgEvent{Friend: protoUser}
+		buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_FRIEND_REQUEST_ACCEPTED, pms)
+		if err == nil {
+			helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+		}
 
-		// send new friend request event to friend websocket clients
-		//_ = internal.Client.UserService.AcceptNotificationEvent(req.AuthRequest, user, friendID)
+		// send event to friend clients
+		friendID := friendRequest.FriendId.Hex()
+		if friendRequest.FriendId.Hex() == user.ID.Hex() {
+			friendID = friendRequest.UserId.Hex()
+		}
+		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_FRIEND_REQUEST_ACCEPTED, pms); err == nil {
+			helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friendID})
+		}
 
 		return &proto.Response{
 			Status:  "success",
@@ -232,11 +237,11 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		return nil, failedResponse
 	}
 
-	// send new friend request event to friend websocket clients
-	//err = internal.Client.UserService.SendNewNotificationsEvent(req.AuthRequest, friend.ID.Hex())
-	//if err != nil {
-	//	sentry.CaptureException(err)
-	//}
+	// send event to friend clients
+	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_NOTIFICATION, &proto.NotificationMsgEvent{})
+	if err == nil {
+		helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friend.ID.Hex()})
+	}
 
 	return &proto.Response{
 		Status:  "success",

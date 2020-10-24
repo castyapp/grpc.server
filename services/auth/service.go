@@ -8,7 +8,6 @@ import (
 	"github.com/CastyLab/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,9 +15,7 @@ import (
 	"regexp"
 )
 
-type Service struct {
-	db *mongo.Database
-}
+type Service struct {}
 
 func (s *Service) isEmail(user string) bool {
 
