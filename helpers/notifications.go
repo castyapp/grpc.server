@@ -30,17 +30,12 @@ func NewNotificationProto(notif *models.Notification) (*proto.Notification, erro
 		return nil, err
 	}
 
-	protoUser, err := NewProtoUser(fromUser)
-	if err != nil {
-		return nil, err
-	}
-
-	protoMSG := &proto.Notification{
+	protoMSG  := &proto.Notification{
 		Id:        notif.ID.Hex(),
 		Type:      notif.Type,
 		Read:      notif.Read,
 		ReadAt:    readAt,
-		FromUser:  protoUser,
+		FromUser:  NewProtoUser(fromUser),
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 	}

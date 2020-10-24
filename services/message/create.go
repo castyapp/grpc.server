@@ -2,8 +2,11 @@ package message
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
@@ -52,22 +55,44 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.CreateMessageReq
 		return nil, failedResponse
 	}
 
-	protoUser, _ := helpers.NewProtoUser(user)
-	protoReciever, _ := helpers.NewProtoUser(reciever)
 	nowTime, _ := ptypes.TimestampProto(time.Now())
+	protoMessage := &proto.Message{
+		Content:   req.Content,
+		Sender:    helpers.NewProtoUser(user),
+		Reciever:  helpers.NewProtoUser(reciever),
+		Edited:    false,
+		Deleted:   false,
+		CreatedAt: nowTime,
+		UpdatedAt: nowTime,
+	}
+
+	fromUser, err := json.Marshal(protoMessage.Sender)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Errorf("could not marshal Sender :%v", err).Error())
+	}
+
+	toUser, err := json.Marshal(protoMessage.Reciever)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Errorf("could not marshal Reciever :%v", err).Error())
+	}
+
+	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_CHAT_MESSAGE, &proto.ChatMsgEvent{
+		Message:   []byte(protoMessage.Content),
+		From:      string(fromUser),
+		To:        string(toUser),
+		CreatedAt: protoMessage.CreatedAt,
+	})
+	if err == nil {
+		helpers.SendEventToUsers(ctx, buffer.Bytes(), []*proto.User{
+			protoMessage.Sender,
+			protoMessage.Reciever,
+		})
+	}
 
 	return &proto.CreateMessageResponse{
 		Code: http.StatusOK,
 		Status: "success",
 		Message: "Message created successfully!",
-		Result:  &proto.Message{
-			Content: req.Content,
-			Sender:  protoUser,
-			Reciever: protoReciever,
-			Edited:  false,
-			Deleted: false,
-			CreatedAt: nowTime,
-			UpdatedAt: nowTime,
-		},
+		Result:  protoMessage,
 	}, nil
 }

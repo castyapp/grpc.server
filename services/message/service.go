@@ -9,15 +9,12 @@ import (
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"net/http"
 )
 
-type Service struct {
-	db *mongo.Database
-}
+type Service struct {}
 
 func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesRequest) (*proto.GetMessagesResponse, error) {
 

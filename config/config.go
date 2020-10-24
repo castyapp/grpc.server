@@ -27,9 +27,10 @@ type ConfMap struct {
 			Spotify string `yaml:"spotify"`
 		} `yaml:"oauth"`
 		Redis struct {
-			Host string `yaml:"host"`
-			Port int    `yaml:"port"`
-			Pass string `yaml:"pass"`
+			MasterName  string     `yaml:"masterName"`
+			Sentinels   []string   `yaml:"sentinels"`
+			Port        int        `yaml:"port"`
+			Pass        string     `yaml:"pass"`
 		} `yaml:"redis"`
 		JWT struct {
 			ExpireTime            int    `yaml:"expire_time"`

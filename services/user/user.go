@@ -3,20 +3,57 @@ package user
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"net/http"
 )
 
-type Service struct {
-	db *mongo.Database
+type Service struct {}
+
+func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
+
+	user, err := auth.Authenticate(req.AuthRequest)
+	if err != nil {
+		return nil, err
+	}
+	protoUser := helpers.NewProtoUser(user)
+
+	var (
+		filter = bson.M{"_id": user.ID}
+		update = bson.M{"$set": bson.M{"state": req.State}}
+	)
+
+	if _, err := db.Connection.Collection("users").UpdateOne(ctx, filter, update); err != nil {
+		sentry.CaptureException(err)
+		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
+	}
+
+	// update self user with new state to other clients
+	pms := &proto.PersonalStateMsgEvent{State: req.State, User: protoUser}
+	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_PERSONAL_STATE_CHANGED, pms)
+	if err == nil {
+		helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+	}
+
+	// update friends with new state of user
+	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_STATE_CHANGED, pms); err == nil {
+		if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
+			return nil, err
+		}
+	}
+
+	return &proto.Response{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "The requested parameter is updated successfully!",
+	}, nil
 }
 
 func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateRequest) (*proto.Response, error) {
@@ -25,6 +62,7 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 	if err != nil {
 		return nil, err
 	}
+	protoUser := helpers.NewProtoUser(user)
 
 	var (
 		filter = bson.M{"_id": user.ID}
@@ -40,6 +78,20 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
 	}
 
+	// update self user with new activity to other clients
+	pms := &proto.PersonalActivityMsgEvent{Activity: &proto.Activity{}, User: protoUser}
+	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_PERSONAL_ACTIVITY_CHANGED, pms)
+	if err == nil {
+		helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+	}
+
+	// update friends with new activity of user
+	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_STATE_CHANGED, pms); err == nil {
+		if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
+			return nil, err
+		}
+	}
+
 	return &proto.Response{
 		Status:  "success",
 		Code:    http.StatusOK,
@@ -53,6 +105,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	if err != nil {
 		return nil, err
 	}
+	protoUser := helpers.NewProtoUser(user)
 
 	activityObjectId, err := primitive.ObjectIDFromHex(req.Activity.Id)
 	if err != nil {
@@ -76,6 +129,25 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 		return nil, status.Error(codes.Aborted, "The requested parameter is not updated!")
 	}
 
+	activity := &proto.Activity{
+		Id: activityObjectId.Hex(),
+		Activity: req.Activity.Activity,
+	}
+
+	// update self user with new activity to other clients
+	pms := &proto.PersonalActivityMsgEvent{Activity: activity, User: protoUser}
+	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_PERSONAL_ACTIVITY_CHANGED, pms)
+	if err == nil {
+		helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+	}
+
+	// update friends with new activity of user
+	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_STATE_CHANGED, pms); err == nil {
+		if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
+			return nil, err
+		}
+	}
+
 	return &proto.Response{
 		Status:  "success",
 		Code:    http.StatusOK,
@@ -90,14 +162,8 @@ func (s *Service) GetUser(_ context.Context, req *proto.AuthenticateRequest) (*p
 		return nil, err
 	}
 
-	protoUser, err := helpers.NewProtoUser(user)
-	if err != nil {
-		sentry.CaptureException(err)
-		return nil, status.Error(codes.Internal, "Could not decode user!")
-	}
-
 	return &proto.GetUserResponse{
-		Result: protoUser,
+		Result: helpers.NewProtoUser(user),
 		Status: "success",
 		Code:   http.StatusOK,
 	}, nil

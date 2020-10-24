@@ -12,7 +12,6 @@ import (
 func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theater, error) {
 
 	var (
-		err error
 		database                 = db.Connection
 		thUser                   = new(models.User)
 		mediaSourceProtoMessage  = new(proto.MediaSource)
@@ -33,15 +32,10 @@ func NewTheaterProto(ctx context.Context, theater *models.Theater) (*proto.Theat
 		return nil, err
 	}
 
-	thProtoMessageUser, err := NewProtoUser(thUser)
-	if err != nil {
-		return nil, err
-	}
-
 	return &proto.Theater{
 		Id:                theater.ID.Hex(),
 		Description:       theater.Description,
-		User:              thProtoMessageUser,
+		User:              NewProtoUser(thUser),
 		MediaSource:       mediaSourceProtoMessage,
 		Privacy:           theater.Privacy,
 		VideoPlayerAccess: theater.VideoPlayerAccess,

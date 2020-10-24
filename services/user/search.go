@@ -49,11 +49,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		if err := cursor.Decode(dbUser); err != nil {
 			continue
 		}
-		protoUser, err := helpers.NewProtoUser(dbUser)
-		if err != nil {
-			continue
-		}
-		protoUsers = append(protoUsers, protoUser)
+		protoUsers = append(protoUsers, helpers.NewProtoUser(dbUser))
 	}
 
 	return &proto.SearchUserResponse{

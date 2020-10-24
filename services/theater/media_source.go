@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
@@ -70,13 +71,11 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 		return nil, err
 	}
 
-	// sending new media source to websocket
-	//err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), mediaSourceId.Hex())
-	//if err != nil {
-	//	sentry.CaptureException(err)
-	//}
-
 	mediaSourceProto := helpers.NewMediaSourceProto(mediaSource)
+	event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_MEDIA_SOURCE_CHANGED, mediaSourceProto)
+	if err == nil {
+		helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater)
+	}
 
 	return &proto.TheaterMediaSourcesResponse{
 		Status:  "success",
@@ -188,32 +187,30 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		return nil, status.Errorf(codes.Internal, "could not update media source, please try again later!")
 	}
 
-	// sending new media source to websocket
-	//err = internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), insertedID.Hex())
-	//if err != nil {
-	//	sentry.CaptureException(err)
-	//}
-
 	createdAt, _ := ptypes.TimestampProto(time.Now())
+	mediaSourceProto := &proto.MediaSource{
+		Id:     insertedID.Hex(),
+		Title:  req.Media.Title,
+		Type:   req.Media.Type,
+		Banner: poster,
+		Uri:    req.Media.Uri,
+		Length: req.Media.Length,
+		Artist: req.Media.Artist,
+		UserId: user.ID.Hex(),
+		CreatedAt: createdAt,
+		UpdatedAt: createdAt,
+	}
+
+	event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_MEDIA_SOURCE_CHANGED, mediaSourceProto)
+	if err == nil {
+		helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater)
+	}
 
 	return &proto.TheaterMediaSourcesResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
 		Message: "Media source created successfully!",
-		Result: []*proto.MediaSource{
-			{
-				Id:     insertedID.Hex(),
-				Title:  req.Media.Title,
-				Type:   req.Media.Type,
-				Banner: poster,
-				Uri:    req.Media.Uri,
-				Length: req.Media.Length,
-				Artist: req.Media.Artist,
-				UserId: user.ID.Hex(),
-				CreatedAt: createdAt,
-				UpdatedAt: createdAt,
-			},
-		},
+		Result: []*proto.MediaSource{mediaSourceProto},
 	}, nil
 }
 
@@ -327,13 +324,6 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 	result, err := collection.DeleteOne(ctx, bson.M{ "_id": mediaSourceObjectID, "user_id": user.ID })
 	if err == nil {
 		if result.DeletedCount == 1 {
-
-			// sending new media source to websocket
-			//err := internal.Client.TheaterService.SendMediaSourceUpdateEvent(req.AuthRequest, theater.ID.Hex(), req.MediaSourceId)
-			//if err != nil {
-			//	sentry.CaptureException(err)
-			//}
-
 			return &proto.Response{
 				Status:  "success",
 				Code:    http.StatusOK,
