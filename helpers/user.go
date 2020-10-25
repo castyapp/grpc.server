@@ -96,7 +96,6 @@ func NewProtoUser(user *models.User) *proto.User {
 		EmailVerified:  user.EmailVerified,
 		Avatar:         user.Avatar,
 		TwoFaEnabled:   user.TwoFactorAuthEnabled,
-		TwoFaToken:     user.TwoFactorAuthToken,
 		LastLogin:      lastLogin,
 		JoinedAt:       joinedAt,
 		UpdatedAt:      updatedAt,
