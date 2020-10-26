@@ -45,12 +45,12 @@ func GetFriendsFromDatabase(ctx context.Context, user *models.User) ([]*proto.Us
 			filter = bson.M{"_id": friend.UserId}
 		}
 
-		friendUserObject := new(models.User)
+		friendUserObject := new(models.UserWithState)
 		if err := userCollection.FindOne(ctx, filter).Decode(friendUserObject); err != nil {
 			continue
 		}
 
-		friends = append(friends, NewProtoUser(friendUserObject))
+		friends = append(friends, NewProtoUserWithState(friendUserObject))
 	}
 
 	return friends, nil
@@ -96,6 +96,29 @@ func NewProtoUser(user *models.User) *proto.User {
 		EmailVerified:  user.EmailVerified,
 		Avatar:         user.Avatar,
 		TwoFaEnabled:   user.TwoFactorAuthEnabled,
+		LastLogin:      lastLogin,
+		JoinedAt:       joinedAt,
+		UpdatedAt:      updatedAt,
+	}
+}
+
+func NewProtoUserWithState(user *models.UserWithState) *proto.User {
+	lastLogin, _ := ptypes.TimestampProto(user.LastLogin)
+	joinedAt,  _ := ptypes.TimestampProto(user.JoinedAt)
+	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
+	return &proto.User{
+		Id:             user.ID.Hex(),
+		Fullname:       user.Fullname,
+		Username:       user.Username,
+		Hash:           user.Hash,
+		Email:          user.Email,
+		IsActive:       user.IsActive,
+		IsStaff:        user.IsStaff,
+		Verified:       user.Verified,
+		EmailVerified:  user.EmailVerified,
+		Avatar:         user.Avatar,
+		TwoFaEnabled:   user.TwoFactorAuthEnabled,
+		State:          user.State,
 		LastLogin:      lastLogin,
 		JoinedAt:       joinedAt,
 		UpdatedAt:      updatedAt,

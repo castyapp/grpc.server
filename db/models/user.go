@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/CastyLab/grpc.proto/proto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -29,6 +30,11 @@ type User struct {
 	LastLogin     time.Time             `bson:"last_login, omitempty" json:"last_login, omitempty"`
 	JoinedAt      time.Time             `bson:"joined_at, omitempty" json:"joined_at, omitempty"`
 	UpdatedAt     time.Time             `bson:"updated_at, omitempty" json:"updated_at, omitempty"`
+}
+
+type UserWithState struct {
+	State proto.PERSONAL_STATE `bson:"state,omitempty" json:"state,omitempty"`
+	User
 }
 
 func (user *User) SetPassword(password string) {
