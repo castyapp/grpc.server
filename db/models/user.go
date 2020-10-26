@@ -25,16 +25,13 @@ type User struct {
 	TwoFactorAuthEnabled  bool          `bson:"two_fa_enabled, omitempty" json:"two_fa_enabled"`
 	TwoFactorAuthToken    string        `bson:"two_fa_token, omitempty" json:"_"`
 
+	State proto.PERSONAL_STATE `bson:"state,omitempty" json:"state,omitempty"`
+
 	Avatar        string                `bson:"avatar, omitempty" json:"avatar, omitempty"`
 	RoleId        uint                  `bson:"role_id, omitempty" json:"role_id, omitempty"`
 	LastLogin     time.Time             `bson:"last_login, omitempty" json:"last_login, omitempty"`
 	JoinedAt      time.Time             `bson:"joined_at, omitempty" json:"joined_at, omitempty"`
 	UpdatedAt     time.Time             `bson:"updated_at, omitempty" json:"updated_at, omitempty"`
-}
-
-type UserWithState struct {
-	State proto.PERSONAL_STATE `bson:"state,omitempty" json:"state,omitempty"`
-	User
 }
 
 func (user *User) SetPassword(password string) {
