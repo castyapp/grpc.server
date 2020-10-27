@@ -43,12 +43,12 @@ func init() {
 		log.Fatal(fmt.Errorf("could not load config: %v", err))
 	}
 
-	if err := redis.Configure(); err != nil {
-		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
-	}
-
 	if err := sentry.Init(sentry.ClientOptions{ Dsn: config.Map.Secrets.SentryDsn }); err != nil {
 		log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
+	}
+
+	if err := redis.Configure(); err != nil {
+		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
 	}
 
 	if err := jwt.Load(); err != nil {

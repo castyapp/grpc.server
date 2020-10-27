@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 	"time"
 )
@@ -56,7 +57,9 @@ func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthReque
 		}
 		event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_UPDATED, req.Theater)
 		if err == nil {
-			helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater)
+			if err := helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 

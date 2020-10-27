@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 	"time"
 )
@@ -138,7 +139,9 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		pms := &proto.FriendRequestAcceptedMsgEvent{Friend: protoUser}
 		buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_FRIEND_REQUEST_ACCEPTED, pms)
 		if err == nil {
-			helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+				log.Println(err)
+			}
 		}
 
 		// send event to friend clients
@@ -147,7 +150,9 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 			friendID = friendRequest.UserId.Hex()
 		}
 		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_FRIEND_REQUEST_ACCEPTED, pms); err == nil {
-			helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friendID})
+			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friendID}); err != nil {
+				log.Println(err)
+			}
 		}
 
 		return &proto.Response{
@@ -240,7 +245,9 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	// send event to friend clients
 	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_NOTIFICATION, &proto.NotificationMsgEvent{})
 	if err == nil {
-		helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friend.ID.Hex()})
+		if err := helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friend.ID.Hex()}); err != nil {
+			log.Println(err)
+		}
 	}
 
 	return &proto.Response{

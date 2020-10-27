@@ -2,7 +2,9 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"github.com/CastyLab/grpc.server/config"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis/v8"
 	"log"
 )
@@ -21,7 +23,9 @@ func Configure() error {
 	cmd := Client.Ping(context.Background())
 	if res := cmd.Val(); res != "PONG" {
 		log.Println("SentinelAddrs: ", config.Map.Secrets.Redis.Sentinels)
-		log.Fatalf("Could not ping the redis server: %v", cmd.Err())
+		mErr := fmt.Errorf("could not ping the redis server: %v", cmd.Err())
+		sentry.CaptureException(mErr)
+		return mErr
 	}
 	return nil
 }
