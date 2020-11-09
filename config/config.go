@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"log"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 type ConfMap struct {
@@ -27,16 +28,17 @@ type ConfMap struct {
 			Spotify string `yaml:"spotify"`
 		} `yaml:"oauth"`
 		Redis struct {
-			MasterName  string     `yaml:"masterName"`
-			Sentinels   []string   `yaml:"sentinels"`
-			Port        int        `yaml:"port"`
-			Pass        string     `yaml:"pass"`
+			MasterName   string   `yaml:"masterName"`
+			Sentinels    []string `yaml:"sentinels"`
+			Port         int      `yaml:"port"`
+			Pass         string   `yaml:"pass"`
+			SentinelPass string   `yaml:"sentinel_pass"`
 		} `yaml:"redis"`
 		JWT struct {
 			ExpireTime            int    `yaml:"expire_time"`
 			RefreshTokenValidTime int    `yaml:"refresh_token_valid_time"`
 			AccessTokenSecret     string `yaml:"access_token_secret"`
-			RefreshTokenSecret     string `yaml:"refresh_token_secret"`
+			RefreshTokenSecret    string `yaml:"refresh_token_secret"`
 		} `yaml:"jwt"`
 		SentryDsn      string `yaml:"sentry_dsn"`
 		HcaptchaSecret string `yaml:"hcaptcha_secret"`
