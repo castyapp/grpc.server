@@ -10,3 +10,4 @@ config/*
 !config/config.go
 uploads
 Caddyfile
+.DS_Store
