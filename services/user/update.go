@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 )
 
@@ -63,7 +64,9 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 		// update self user with new activity to other clients
 		buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_USER_UPDATED, protoUser)
 		if err == nil {
-			helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+				log.Println(err)
+			}
 		}
 
 		// update friends with new activity of user

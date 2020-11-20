@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 	"time"
 )
@@ -102,7 +103,10 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 	for _, friend := range friends {
 		event, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_NOTIFICATION, &proto.NotificationMsgEvent{})
 		if err == nil {
-			helpers.SendEventToUser(ctx, event.Bytes(), &proto.User{Id: friend.ID.Hex()})
+			err := helpers.SendEventToUser(ctx, event.Bytes(), &proto.User{Id: friend.ID.Hex()})
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 

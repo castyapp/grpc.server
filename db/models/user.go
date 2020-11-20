@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/CastyLab/grpc.proto/proto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -23,6 +24,8 @@ type User struct {
 
 	TwoFactorAuthEnabled  bool          `bson:"two_fa_enabled, omitempty" json:"two_fa_enabled"`
 	TwoFactorAuthToken    string        `bson:"two_fa_token, omitempty" json:"_"`
+
+	State proto.PERSONAL_STATE `bson:"state,omitempty" json:"state,omitempty"`
 
 	Avatar        string                `bson:"avatar, omitempty" json:"avatar, omitempty"`
 	RoleId        uint                  `bson:"role_id, omitempty" json:"role_id, omitempty"`

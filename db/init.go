@@ -22,7 +22,7 @@ func Configure() error {
 	opts.SetAuth(options.Credential{
 		Username: config.Map.Secrets.Db.User,
 		Password: config.Map.Secrets.Db.Pass,
-		PasswordSet: true,
+		AuthSource: config.Map.Secrets.Db.Name,
 	})
 
 	client, err := mongo.NewClient(opts)

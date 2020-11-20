@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -74,7 +75,9 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 	mediaSourceProto := helpers.NewMediaSourceProto(mediaSource)
 	event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_MEDIA_SOURCE_CHANGED, mediaSourceProto)
 	if err == nil {
-		helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater)
+		if err := helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater); err != nil {
+			log.Println(err)
+		}
 	}
 
 	return &proto.TheaterMediaSourcesResponse{
@@ -203,7 +206,9 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 
 	event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_MEDIA_SOURCE_CHANGED, mediaSourceProto)
 	if err == nil {
-		helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater)
+		if err := helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater); err != nil {
+			log.Println(err)
+		}
 	}
 
 	return &proto.TheaterMediaSourcesResponse{

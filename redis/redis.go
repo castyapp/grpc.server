@@ -2,9 +2,12 @@ package redis
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.server/config"
-	"github.com/go-redis/redis/v8"
+	"fmt"
 	"log"
+
+	"github.com/CastyLab/grpc.server/config"
+	"github.com/getsentry/sentry-go"
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -13,15 +16,18 @@ var (
 
 func Configure() error {
 	Client = redis.NewFailoverClient(&redis.FailoverOptions{
-		SentinelAddrs: config.Map.Secrets.Redis.Sentinels,
-		Password: config.Map.Secrets.Redis.Pass,
-		MasterName: config.Map.Secrets.Redis.MasterName,
-		DB: 0,
+		SentinelAddrs:    config.Map.Secrets.Redis.Sentinels,
+		SentinelPassword: config.Map.Secrets.Redis.SentinelPass,
+		Password:         config.Map.Secrets.Redis.Pass,
+		MasterName:       config.Map.Secrets.Redis.MasterName,
+		DB:               0,
 	})
 	cmd := Client.Ping(context.Background())
 	if res := cmd.Val(); res != "PONG" {
 		log.Println("SentinelAddrs: ", config.Map.Secrets.Redis.Sentinels)
-		log.Fatalf("Could not ping the redis server: %v", cmd.Err())
+		mErr := fmt.Errorf("could not ping the redis server: %v", cmd.Err())
+		sentry.CaptureException(mErr)
+		return mErr
 	}
 	return nil
 }

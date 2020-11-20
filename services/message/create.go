@@ -76,7 +76,7 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.CreateMessageReq
 		return nil, status.Error(codes.Internal, fmt.Errorf("could not marshal Reciever :%v", err).Error())
 	}
 
-	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_CHAT_MESSAGE, &proto.ChatMsgEvent{
+	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_CHAT_MESSAGES, &proto.ChatMsgEvent{
 		Message:   []byte(protoMessage.Content),
 		From:      string(fromUser),
 		To:        string(toUser),

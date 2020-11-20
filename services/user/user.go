@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 )
 
@@ -39,7 +40,9 @@ func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest
 	pms := &proto.PersonalStateMsgEvent{State: req.State, User: protoUser}
 	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_PERSONAL_STATE_CHANGED, pms)
 	if err == nil {
-		helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+		if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+			log.Println(err)
+		}
 	}
 
 	// update friends with new state of user
@@ -82,7 +85,9 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 	pms := &proto.PersonalActivityMsgEvent{Activity: &proto.Activity{}, User: protoUser}
 	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_PERSONAL_ACTIVITY_CHANGED, pms)
 	if err == nil {
-		helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+		if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+			log.Println(err)
+		}
 	}
 
 	// update friends with new activity of user
@@ -138,7 +143,9 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	pms := &proto.PersonalActivityMsgEvent{Activity: activity, User: protoUser}
 	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_PERSONAL_ACTIVITY_CHANGED, pms)
 	if err == nil {
-		helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser)
+		if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+			log.Println(err)
+		}
 	}
 
 	// update friends with new activity of user

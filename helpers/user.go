@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 )
 
 func GetFriendsFromDatabase(ctx context.Context, user *models.User) ([]*proto.User, error) {
@@ -50,7 +51,7 @@ func GetFriendsFromDatabase(ctx context.Context, user *models.User) ([]*proto.Us
 			continue
 		}
 
-		friends = append(friends, NewProtoUser(friendUserObject))
+		friends = append(friends, NewProtoUserWithState(friendUserObject))
 	}
 
 	return friends, nil
@@ -66,18 +67,23 @@ func SendEventToFriends(ctx context.Context, event []byte, user *models.User) er
 	return nil
 }
 
-func SendEventToUser(ctx context.Context, event []byte, user *proto.User)  {
-	redis.Client.Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event)
+func SendEventToUser(ctx context.Context, event []byte, user *proto.User) (err error) {
+	_, err = redis.Client.Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event).Result()
+	return
 }
 
 func SendEventToUsers(ctx context.Context, event []byte, users []*proto.User)  {
 	for _, user := range users {
-		redis.Client.Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event)
+		_, err := redis.Client.Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event).Result()
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
-func SendEventToTheaterMembers(ctx context.Context, event []byte, theater *models.Theater)  {
-	redis.Client.Publish(ctx, fmt.Sprintf("theater:events:%s", theater.ID.Hex()), event)
+func SendEventToTheaterMembers(ctx context.Context, event []byte, theater *models.Theater) (err error) {
+	_, err = redis.Client.Publish(ctx, fmt.Sprintf("theater:events:%s", theater.ID.Hex()), event).Result()
+	return
 }
 
 func NewProtoUser(user *models.User) *proto.User {
@@ -96,9 +102,14 @@ func NewProtoUser(user *models.User) *proto.User {
 		EmailVerified:  user.EmailVerified,
 		Avatar:         user.Avatar,
 		TwoFaEnabled:   user.TwoFactorAuthEnabled,
-		TwoFaToken:     user.TwoFactorAuthToken,
 		LastLogin:      lastLogin,
 		JoinedAt:       joinedAt,
 		UpdatedAt:      updatedAt,
 	}
+}
+
+func NewProtoUserWithState(user *models.User) *proto.User {
+	protoUser := NewProtoUser(user)
+	protoUser.State = user.State
+	return protoUser
 }
