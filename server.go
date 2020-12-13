@@ -3,6 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"net"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
@@ -16,15 +20,12 @@ import (
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"log"
-	"net"
-	"time"
 )
 
 var (
 	server *grpc.Server
-	port *int
-	host *string
+	port   *int
+	host   *string
 )
 
 func init() {
@@ -32,8 +33,8 @@ func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
 	server = grpc.NewServer()
-	port   = flag.Int("port", 55283, "gRPC server port")
-	host   = flag.String("host", "0.0.0.0", "gRPC server host")
+	port = flag.Int("port", 55283, "gRPC server port")
+	host = flag.String("host", "0.0.0.0", "gRPC server host")
 	configFileName := flag.String("config-file", "config.yml", "config.yaml file")
 
 	flag.Parse()
@@ -43,13 +44,13 @@ func init() {
 		log.Fatal(fmt.Errorf("could not load config: %v", err))
 	}
 
-	if err := sentry.Init(sentry.ClientOptions{ Dsn: config.Map.Secrets.SentryDsn }); err != nil {
+	if err := sentry.Init(sentry.ClientOptions{Dsn: config.Map.Secrets.SentryDsn}); err != nil {
 		log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
 	}
 
-	if err := redis.Configure(); err != nil {
-		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
-	}
+	//if err := redis.Configure(); err != nil {
+	//log.Fatal(fmt.Errorf("could not configure redis : %v", err))
+	//}
 
 	if err := jwt.Load(); err != nil {
 		err := fmt.Errorf("could not load jwt configuration: %v", err)
