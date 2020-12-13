@@ -2,25 +2,27 @@ package user
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
 )
 
-func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*proto.SearchUserResponse,error) {
+func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*proto.SearchUserResponse, error) {
 
 	var (
-		collection = db.Connection.Collection("users")
+		collection    = db.Connection.Collection("users")
 		emptyResponse = &proto.SearchUserResponse{
-			Status:  "success",
-			Code:    http.StatusOK,
-			Result:  make([]*proto.User, 0),
+			Status: "success",
+			Code:   http.StatusOK,
+			Result: make([]*proto.User, 0),
 		}
 	)
 
@@ -33,9 +35,18 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		return nil, status.Error(codes.InvalidArgument, "keyword is required")
 	}
 
+	collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.M{
+			"fullname": "text",
+			"username": "text",
+		},
+	})
+
 	filter := bson.M{
 		"_id": bson.M{"$ne": user.ID},
-		"$text": bson.M{"$search": req.Keyword},
+		"$text": bson.M{
+			"$search": req.Keyword,
+		},
 	}
 
 	cursor, err := collection.Find(ctx, filter)
@@ -53,8 +64,8 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 	}
 
 	return &proto.SearchUserResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  protoUsers,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: protoUsers,
 	}, nil
 }
