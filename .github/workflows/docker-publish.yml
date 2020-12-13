@@ -13,44 +13,42 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
         
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
       - name: Build and Push to Docker Hub
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: castylab/grpc
           tags: castylab/grpc:latest
 
       - name: Build alpine and Push to Docker Hub
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile-alpine
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: castylab/grpc
           tags: castylab/grpc:latest-alpine
 
       - name: Build and Push to GitHub Packages
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
           repository: castylab/grpc.service/grpc
           tags: castylab/grpc.service/grpc:latest
 
       - name: Build alpine version and Push to GitHub Packages
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile-alpine
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
           repository: castylab/grpc.service/grpc
           tags: castylab/grpc.service/grpc:latest-alpine
