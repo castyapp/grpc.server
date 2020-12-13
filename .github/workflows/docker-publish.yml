@@ -7,15 +7,55 @@ on:
       - v*
 jobs:
   push_to_registries:
-    name: Push Docker image to multiple registries
+    name: Push Docker image to Dockerhub and Github
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Push to Docker Hub
-        uses: docker/build-push-action@v1
+        
+      - name: Build and Push to Docker Hub
+        uses: docker/build-push-action@v2
         with:
+          context: .
+          file: ./Dockerfile
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: castylab/grpc
-          tag_with_ref: true
+          tags: |
+            latest
+
+      - name: Build alpine and Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile-alpine
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: castylab/grpc
+          tags: |
+            latest-alpine
+
+      - name: Build and Push to GitHub Packages
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: castylab/grpc.service/grpc
+          tags: |
+            latest
+
+      - name: Build alpine version and Push to GitHub Packages
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile-alpine
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: castylab/grpc.service/grpc
+          tags: |
+            latest-alpine
+
