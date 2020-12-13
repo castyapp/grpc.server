@@ -13,13 +13,6 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
       - uses: docker/setup-buildx-action@v1
-      - name: Login to GitHub Packages Docker Registry
-        uses: docker/login-action@v1
-        with:
-          registry: docker.pkg.github.com
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          logout: true
 
       - name: Login to DockerHub
         uses: docker/login-action@v1 
@@ -27,7 +20,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           logout: true
-        
+
       - name: Build and Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
@@ -41,22 +34,5 @@ jobs:
         with:
           context: .
           file: ./Dockerfile-alpine
-          tags: castylab/grpc:latest-alpine
+          tags: castylab/grpc:alpine
           push: true
-
-      - name: Build and Push to GitHub Packages
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          tags: docker.pkg.github.com/castylab/grpc.service/grpc:latest
-          push: true
-
-      - name: Build alpine version and Push to GitHub Packages
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile-alpine
-          tags: docker.pkg.github.com/castylab/grpc.service/grpc:latest-alpine
-          push: true
-
