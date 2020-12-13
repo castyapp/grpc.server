@@ -32,6 +32,7 @@ jobs:
           context: .
           file: ./Dockerfile
           tags: castylab/grpc:latest
+          push: true
 
       - name: Build alpine and Push to Docker Hub
         uses: docker/build-push-action@v2
@@ -39,6 +40,7 @@ jobs:
           context: .
           file: ./Dockerfile-alpine
           tags: castylab/grpc:latest-alpine
+          push: true
 
       - name: Build and Push to GitHub Packages
         uses: docker/build-push-action@v2
@@ -46,6 +48,7 @@ jobs:
           context: .
           file: ./Dockerfile
           tags: docker.pkg.github.com/castylab/grpc.service/grpc:latest
+          push: true
 
       - name: Build alpine version and Push to GitHub Packages
         uses: docker/build-push-action@v2
@@ -53,4 +56,5 @@ jobs:
           context: .
           file: ./Dockerfile-alpine
           tags: docker.pkg.github.com/castylab/grpc.service/grpc:latest-alpine
+          push: true
 
