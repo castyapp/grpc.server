@@ -14,29 +14,27 @@ jobs:
         uses: actions/checkout@v2
         
       - name: Build and Push to Docker Hub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v1
         with:
           context: .
           file: ./Dockerfile
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: castylab/grpc
-          tags: |
-            latest
+          tags: castylab/grpc:latest
 
       - name: Build alpine and Push to Docker Hub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v1
         with:
           context: .
           file: ./Dockerfile-alpine
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: castylab/grpc
-          tags: |
-            latest-alpine
+          tags: castylab/grpc:latest-alpine
 
       - name: Build and Push to GitHub Packages
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v1
         with:
           context: .
           file: ./Dockerfile
@@ -44,11 +42,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
           repository: castylab/grpc.service/grpc
-          tags: |
-            latest
+          tags: castylab/grpc.service/grpc:latest
 
       - name: Build alpine version and Push to GitHub Packages
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v1
         with:
           context: .
           file: ./Dockerfile-alpine
@@ -56,6 +53,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
           repository: castylab/grpc.service/grpc
-          tags: |
-            latest-alpine
+          tags: castylab/grpc.service/grpc:latest-alpine
 
