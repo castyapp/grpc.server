@@ -11,3 +11,6 @@ config/*
 uploads
 Caddyfile
 .DS_Store
+server
+docker.config.yml
+build.sh

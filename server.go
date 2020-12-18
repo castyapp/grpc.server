@@ -48,9 +48,9 @@ func init() {
 		log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
 	}
 
-	//if err := redis.Configure(); err != nil {
-	//log.Fatal(fmt.Errorf("could not configure redis : %v", err))
-	//}
+	if err := redis.Configure(); err != nil {
+		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
+	}
 
 	if err := jwt.Load(); err != nil {
 		err := fmt.Errorf("could not load jwt configuration: %v", err)
