@@ -28,6 +28,8 @@ type ConfMap struct {
 			Spotify string `yaml:"spotify"`
 		} `yaml:"oauth"`
 		Redis struct {
+			Addr         string   `yaml:"addr"`
+			Replicaset   bool     `yaml:"replicaset"`
 			MasterName   string   `yaml:"masterName"`
 			Sentinels    []string `yaml:"sentinels"`
 			Port         int      `yaml:"port"`

@@ -3,10 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/CastyLab/grpc.server/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 var (
@@ -15,14 +16,13 @@ var (
 
 func Configure() error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
 
 	opts := options.Client()
 	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", config.Map.Secrets.Db.Host, config.Map.Secrets.Db.Port))
 	opts.SetAuth(options.Credential{
 		Username: config.Map.Secrets.Db.User,
 		Password: config.Map.Secrets.Db.Pass,
-		AuthSource: config.Map.Secrets.Db.Name,
 	})
 
 	client, err := mongo.NewClient(opts)
