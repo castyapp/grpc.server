@@ -21,8 +21,9 @@ func Configure() error {
 	opts := options.Client()
 	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", config.Map.Secrets.Db.Host, config.Map.Secrets.Db.Port))
 	opts.SetAuth(options.Credential{
-		Username: config.Map.Secrets.Db.User,
-		Password: config.Map.Secrets.Db.Pass,
+		Username:   config.Map.Secrets.Db.User,
+		Password:   config.Map.Secrets.Db.Pass,
+		AuthSource: config.Map.Secrets.Db.Name,
 	})
 
 	client, err := mongo.NewClient(opts)
