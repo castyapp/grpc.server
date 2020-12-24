@@ -2,6 +2,9 @@ package user
 
 import (
 	"context"
+	"log"
+	"net/http"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
@@ -12,11 +15,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
-	"net/http"
 )
 
-type Service struct {}
+type Service struct{}
 
 func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
 
@@ -91,7 +92,7 @@ func (s *Service) RemoveActivity(ctx context.Context, req *proto.AuthenticateReq
 	}
 
 	// update friends with new activity of user
-	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_STATE_CHANGED, pms); err == nil {
+	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_ACTIVITY_CHANGED, pms); err == nil {
 		if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
 			return nil, err
 		}
@@ -122,7 +123,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 		update = bson.M{
 			"$set": bson.M{
 				"activity": bson.M{
-					"_id": activityObjectId,
+					"_id":      activityObjectId,
 					"activity": req.Activity.Activity,
 				},
 			},
@@ -135,7 +136,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	}
 
 	activity := &proto.Activity{
-		Id: activityObjectId.Hex(),
+		Id:       activityObjectId.Hex(),
 		Activity: req.Activity.Activity,
 	}
 
@@ -149,7 +150,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	}
 
 	// update friends with new activity of user
-	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_STATE_CHANGED, pms); err == nil {
+	if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_PERSONAL_ACTIVITY_CHANGED, pms); err == nil {
 		if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
 			return nil, err
 		}
@@ -163,12 +164,10 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 }
 
 func (s *Service) GetUser(_ context.Context, req *proto.AuthenticateRequest) (*proto.GetUserResponse, error) {
-
 	user, err := auth.Authenticate(req)
 	if err != nil {
 		return nil, err
 	}
-
 	return &proto.GetUserResponse{
 		Result: helpers.NewProtoUser(user),
 		Status: "success",
