@@ -2,7 +2,7 @@ name: Publish Docker image
 on:
   push:
     branches:
-      - master
+      - develop
     tags:
       - v*
 jobs:
@@ -26,13 +26,5 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          tags: castylab/grpc:latest
-          push: true
-
-      - name: Build alpine and Push to Docker Hub
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile-alpine
-          tags: castylab/grpc:alpine
+          tags: castylab/grpc:dev-$(git rev-parse --short "$GITHUB_SHA")
           push: true
