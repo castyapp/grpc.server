@@ -42,10 +42,15 @@ type ConfMap struct {
 			AccessTokenSecret     string `yaml:"access_token_secret"`
 			RefreshTokenSecret    string `yaml:"refresh_token_secret"`
 		} `yaml:"jwt"`
+		ObjectStorage struct {
+			Endpoint  string `yaml:"endpoint"`
+			Region    string `yaml:"region"`
+			AccessKey string `yaml:"access_key"`
+			SecretKey string `yaml:"secret_key"`
+		} `yaml:"object_storage"`
 		SentryDsn      string `yaml:"sentry_dsn"`
 		HcaptchaSecret string `yaml:"hcaptcha_secret"`
 	} `yaml:"secrets"`
-	StoragePath string `yaml:"storage_path"`
 }
 
 var Map = new(ConfMap)

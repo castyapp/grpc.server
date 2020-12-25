@@ -23,6 +23,10 @@ secrets:
     refresh_token_valid_time: 7
     private_key_path: "./config/jwt.key"
     public_key_path: "./config/jwt.pub"
+  object_storage:
+    endpoint: "127.0.0.1:9000"
+    access_key: "secret-access-key"
+    secret_key: "secret-key"
   sentry_dsn: ""
   hcaptcha_secret: ""
 storage_path: "/volumes/storage"

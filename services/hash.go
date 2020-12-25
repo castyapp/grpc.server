@@ -2,12 +2,12 @@ package services
 
 import (
 	"fmt"
-	"github.com/CastyLab/grpc.server/config"
-	"io"
 	"math/rand"
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/CastyLab/grpc.server/storage"
+	"github.com/minio/minio-go"
 )
 
 func RandomString(length int) string {
@@ -21,22 +21,15 @@ func RandomString(length int) string {
 }
 
 func SaveAvatarFromUrl(url string) (string, error) {
-	var (
-		storagePath = config.Map.StoragePath
-		avatarName  = RandomNumber(20)
-	)
-	avatarFile, err := os.Create(fmt.Sprintf("%s/uploads/avatars/%s.png", storagePath, avatarName))
-	if err != nil {
-		return avatarName, err
-	}
-	defer avatarFile.Close()
+	avatarName := RandomNumber(20)
 	resp, err := http.DefaultClient.Get(url)
 	if err != nil {
 		return avatarName, err
 	}
 	defer resp.Body.Close()
-	if _, err := io.Copy(avatarFile, resp.Body); err != nil {
-		return avatarName, err
+	_, err := storage.Client.PutObject("avatars", fmt.Sprintf("%s.png", avatarName), resp, -1, minio.PutObjectOptions{})
+	if err != nil {
+		return "", err
 	}
 	return avatarName, nil
 }
