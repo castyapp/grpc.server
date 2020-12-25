@@ -2,6 +2,9 @@ package auth
 
 import (
 	"context"
+	"net/http"
+	"regexp"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
@@ -11,11 +14,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"regexp"
 )
 
-type Service struct {}
+type Service struct {
+	proto.UnimplementedAuthServiceServer
+}
 
 func (s *Service) isEmail(user string) bool {
 
@@ -47,9 +50,9 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		return nil, unauthorized
 	}
 
-	filter := bson.M{ "username": req.User }
+	filter := bson.M{"username": req.User}
 	if s.isEmail(req.User) {
-		filter = bson.M{ "email": req.User }
+		filter = bson.M{"email": req.User}
 	}
 
 	if err := collection.FindOne(ctx, filter).Decode(&user); err != nil {
@@ -65,13 +68,12 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 		}
 
 		return &proto.AuthResponse{
-			Status: "success",
-			Code:   http.StatusOK,
-			Token:  []byte(token),
-			RefreshedToken:  []byte(refreshedToken),
+			Status:         "success",
+			Code:           http.StatusOK,
+			Token:          []byte(token),
+			RefreshedToken: []byte(refreshedToken),
 		}, nil
 	}
 
 	return nil, unauthorized
 }
-

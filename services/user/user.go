@@ -17,7 +17,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Service struct{}
+type Service struct {
+	proto.UnimplementedUserServiceServer
+}
 
 func (s *Service) UpdateState(ctx context.Context, req *proto.UpdateStateRequest) (*proto.Response, error) {
 
