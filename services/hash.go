@@ -27,7 +27,7 @@ func SaveAvatarFromUrl(url string) (string, error) {
 		return avatarName, err
 	}
 	defer resp.Body.Close()
-	_, err := storage.Client.PutObject("avatars", fmt.Sprintf("%s.png", avatarName), resp, -1, minio.PutObjectOptions{})
+	_, err = storage.Client.PutObject("avatars", fmt.Sprintf("%s.png", avatarName), resp.Body, -1, minio.PutObjectOptions{})
 	if err != nil {
 		return "", err
 	}

@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/CastyLab/api.server/config"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/minio/minio-go"
 )
 
