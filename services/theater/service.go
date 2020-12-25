@@ -1,3 +1,7 @@
 package theater
 
-type Service struct {}
+import "github.com/CastyLab/grpc.proto/proto"
+
+type Service struct {
+	proto.UnimplementedTheaterServiceServer
+}
