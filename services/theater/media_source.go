@@ -92,12 +92,13 @@ func (s *Service) SavePosterFromUrl(url string) (string, error) {
 	posterName := services.RandomNumber(20)
 	resp, err := http.DefaultClient.Get(url)
 	if err != nil {
-		return posterName, err
+		return "", err
 	}
 	defer resp.Body.Close()
-	_, err = storage.Client.PutObject("posters", fmt.Sprintf("%s.png", posterName), resp.Body, -1, minio.PutObjectOptions{})
-	if err != nil {
-		return "", nil
+	if resp.Code == http.StatusOK {
+		if _, err := storage.Client.PutObject("posters", fmt.Sprintf("%s.png", posterName), resp.Body, -1, minio.PutObjectOptions{}); err != nil {
+			return "", err
+		}
 	}
 	return posterName, nil
 }
