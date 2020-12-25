@@ -3,6 +3,7 @@ module github.com/CastyLab/grpc.server
 go 1.14
 
 require (
+	github.com/CastyLab/api.server v0.0.0-20201225063805-8f1a64c0066f
 	github.com/CastyLab/grpc.proto v0.0.0-20201225055350-cf0387f29fe2
 	github.com/asticode/go-astisub v0.2.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -11,7 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.3.2
 	github.com/gobwas/ws v1.0.3 // indirect
 	github.com/golang/protobuf v1.4.3
-	github.com/minio/minio-go v6.0.14+incompatible // indirect
+	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/pkg/errors v0.8.1
 	go.mongodb.org/mongo-driver v1.3.1
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9

@@ -95,7 +95,7 @@ func (s *Service) SavePosterFromUrl(url string) (string, error) {
 		return posterName, err
 	}
 	defer resp.Body.Close()
-	_, err = storage.Client.PutObject("posters", fmt.Sprintf("%s.png", posterName), resp, -1, minio.PutObjectOptions{})
+	_, err = storage.Client.PutObject("posters", fmt.Sprintf("%s.png", posterName), resp.Body, -1, minio.PutObjectOptions{})
 	if err != nil {
 		return "", nil
 	}
