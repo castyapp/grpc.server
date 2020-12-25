@@ -2,6 +2,10 @@ package user
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
 	"github.com/CastyLab/grpc.server/db"
@@ -12,9 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
-	"net/http"
-	"time"
 )
 
 func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.AuthenticateRequest) (*proto.PendingFriendRequests, error) {
@@ -31,7 +32,7 @@ func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.Authe
 	}
 
 	filter := bson.M{
-		"accepted": false,
+		"accepted":  false,
 		"friend_id": user.ID,
 	}
 
@@ -61,9 +62,9 @@ func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.Authe
 	}
 
 	return &proto.PendingFriendRequests{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  friendRequests,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: friendRequests,
 	}, nil
 }
 
@@ -71,6 +72,7 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	var (
 		friendRequest     = new(models.Friend)
+		usersCollection   = db.Connection.Collection("users")
 		friendsCollection = db.Connection.Collection("friends")
 		notifsCollection  = db.Connection.Collection("notifications")
 		failedResponse    = status.Error(codes.Internal, "Could not accept friend request, Please try again later!")
@@ -81,6 +83,18 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 		return nil, err
 	}
 	protoUser := helpers.NewProtoUser(user)
+
+	// send event to friend clients
+	friendID := friendRequest.FriendId
+	if friendRequest.FriendId.Hex() == user.ID.Hex() {
+		friendID = friendRequest.UserId
+	}
+
+	var friendObj = new(models.User)
+	if err := usersCollection.FindOne(ctx, bson.M{"_id": friendID}).Decode(&friendObj); err != nil {
+		return nil, err
+	}
+	protoFriend := helpers.NewProtoUser(friendObj)
 
 	frObjectID, err := primitive.ObjectIDFromHex(req.RequestId)
 	if err != nil {
@@ -104,16 +118,16 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	}
 
 	findNotif := bson.M{
-		"extra": friendRequest.ID,
+		"extra":      friendRequest.ID,
 		"to_user_id": user.ID,
 	}
 
 	// update user's notification to read
 	_, _ = notifsCollection.UpdateOne(ctx, findNotif, bson.M{
 		"$set": bson.M{
-			"read": true,
+			"read":       true,
 			"updated_at": time.Now(),
-			"read_at": time.Now(),
+			"read_at":    time.Now(),
 		},
 	})
 
@@ -135,22 +149,16 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	if updateResult.ModifiedCount == 1 {
 
-		// send event to self user clients
-		pms := &proto.FriendRequestAcceptedMsgEvent{Friend: protoUser}
-		buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_FRIEND_REQUEST_ACCEPTED, pms)
-		if err == nil {
+		// sending friend to current user
+		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_FRIEND, protoFriend); err == nil {
 			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
 				log.Println(err)
 			}
 		}
 
-		// send event to friend clients
-		friendID := friendRequest.FriendId.Hex()
-		if friendRequest.FriendId.Hex() == user.ID.Hex() {
-			friendID = friendRequest.UserId.Hex()
-		}
-		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_FRIEND_REQUEST_ACCEPTED, pms); err == nil {
-			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friendID}); err != nil {
+		// sending current user to friend
+		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_FRIEND, protoUser); err == nil {
+			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoFriend); err != nil {
 				log.Println(err)
 			}
 		}
@@ -191,10 +199,10 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 			"$or": []interface{}{
 				bson.M{
 					"friend_id": user.ID,
-					"user_id": friendObjectId,
+					"user_id":   friendObjectId,
 				},
 				bson.M{
-					"user_id": user.ID,
+					"user_id":   user.ID,
 					"friend_id": friendObjectId,
 				},
 			},
