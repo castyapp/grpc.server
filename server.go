@@ -17,6 +17,7 @@ import (
 	"github.com/CastyLab/grpc.server/services/message"
 	"github.com/CastyLab/grpc.server/services/theater"
 	"github.com/CastyLab/grpc.server/services/user"
+	"github.com/CastyLab/grpc.server/storage"
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -60,6 +61,12 @@ func init() {
 
 	if err := oauth.ConfigureOAUTHClients(); err != nil {
 		err := fmt.Errorf("could not load oauth clients configurations: %v", err)
+		sentry.CaptureException(err)
+		log.Fatal(err)
+	}
+
+	if err := storage.Configure(); err != nil {
+		err := fmt.Errorf("could not configure s3 bucket storage client: %v", err)
 		sentry.CaptureException(err)
 		log.Fatal(err)
 	}
