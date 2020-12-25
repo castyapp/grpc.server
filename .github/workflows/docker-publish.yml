@@ -12,6 +12,13 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
+
+      - name: Declare git repo vars
+        id: vars
+        shell: bash
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
       - uses: docker/setup-buildx-action@v1
 
       - name: Login to DockerHub
@@ -26,5 +33,5 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          tags: castylab/grpc:dev-$(git rev-parse --short "$GITHUB_SHA")
+          tags: castylab/grpc:dev-${{ steps.vars.outputs.sha_short }}
           push: true
