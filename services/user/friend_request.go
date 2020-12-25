@@ -84,18 +84,6 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	}
 	protoUser := helpers.NewProtoUser(user)
 
-	// send event to friend clients
-	friendID := friendRequest.FriendId
-	if friendRequest.FriendId.Hex() == user.ID.Hex() {
-		friendID = friendRequest.UserId
-	}
-
-	var friendObj = new(models.User)
-	if err := usersCollection.FindOne(ctx, bson.M{"_id": friendID}).Decode(&friendObj); err != nil {
-		return nil, err
-	}
-	protoFriend := helpers.NewProtoUser(friendObj)
-
 	frObjectID, err := primitive.ObjectIDFromHex(req.RequestId)
 	if err != nil {
 		return nil, failedResponse
@@ -116,6 +104,18 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	if friendRequest.Accepted {
 		return nil, status.Error(codes.InvalidArgument, "Friend request is not valid anymore!")
 	}
+
+	// send event to friend clients
+	friendID := friendRequest.FriendId
+	if friendRequest.FriendId.Hex() == user.ID.Hex() {
+		friendID = friendRequest.UserId
+	}
+
+	var friendObj = new(models.User)
+	if err := usersCollection.FindOne(ctx, bson.M{"_id": friendID}).Decode(&friendObj); err != nil {
+		return nil, err
+	}
+	protoFriend := helpers.NewProtoUser(friendObj)
 
 	findNotif := bson.M{
 		"extra":      friendRequest.ID,
