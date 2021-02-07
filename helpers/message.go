@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"context"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
@@ -12,25 +13,24 @@ import (
 func NewProtoMessage(ctx context.Context, message *models.Message) (*proto.Message, error) {
 
 	var (
-		err error
-		dbSender   = new(models.User)
+		err        error
+		sender     = new(models.User)
 		collection = db.Connection.Collection("users")
 	)
 
-	if err := collection.FindOne(ctx, bson.M{ "_id": message.SenderId }).Decode(dbSender); err != nil {
+	if err := collection.FindOne(ctx, bson.M{"_id": message.SenderId}).Decode(sender); err != nil {
 		return nil, err
 	}
 
-	sender := NewProtoUser(dbSender)
 	createdAt, _ := ptypes.TimestampProto(message.CreatedAt)
 	updatedAt, _ := ptypes.TimestampProto(message.UpdatedAt)
 
 	protoMessage := &proto.Message{
-		Id:       message.ID.Hex(),
-		Content:  message.Content,
-		Sender:   sender,
-		Edited:   message.Edited,
-		Deleted:  message.Deleted,
+		Id:        message.ID.Hex(),
+		Content:   message.Content,
+		Sender:    sender.ToProto(),
+		Edited:    message.Edited,
+		Deleted:   message.Deleted,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 	}
