@@ -1,22 +1,60 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"context"
 	"time"
+
+	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.server/db"
+	"github.com/golang/protobuf/ptypes"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Message struct {
-	ID            *primitive.ObjectID     `bson:"_id" json:"id"`
+	ID         *primitive.ObjectID `bson:"_id" json:"id"`
+	Content    string              `bson:"content" json:"content"`
+	SenderId   *primitive.ObjectID `bson:"sender_id" json:"sender_id"`
+	ReceiverId *primitive.ObjectID `bson:"receiver_id" json:"receiver_id"`
+	Edited     bool                `bson:"edited" json:"edited"`
+	Deleted    bool                `bson:"deleted" json:"deleted"`
+	CreatedAt  time.Time           `bson:"created_at" json:"created_at"`
+	UpdatedAt  time.Time           `bson:"updated_at" json:"updated_at"`
+	DeletedAt  time.Time           `bson:"deleted_at" json:"deleted_at"`
+}
 
-	Content       string                  `bson:"content" json:"content"`
+func (m *Message) ToProto() (*proto.Message, error) {
 
-	SenderId      *primitive.ObjectID     `bson:"sender_id" json:"sender_id"`
-	ReceiverId    *primitive.ObjectID     `bson:"receiver_id" json:"receiver_id"`
+	var (
+		ctx        = context.Background()
+		err        error
+		sender     = new(User)
+		collection = db.Connection.Collection("users")
+	)
 
-	Edited        bool                    `bson:"edited" json:"edited"`
-	Deleted       bool                    `bson:"deleted" json:"deleted"`
+	if err := collection.FindOne(ctx, bson.M{"_id": m.SenderId}).Decode(sender); err != nil {
+		return nil, err
+	}
 
-	CreatedAt     time.Time               `bson:"created_at" json:"created_at"`
-	UpdatedAt     time.Time               `bson:"updated_at" json:"updated_at"`
-	DeletedAt     time.Time               `bson:"deleted_at" json:"deleted_at"`
+	createdAt, _ := ptypes.TimestampProto(m.CreatedAt)
+	updatedAt, _ := ptypes.TimestampProto(m.UpdatedAt)
+
+	protoMessage := &proto.Message{
+		Id:        m.ID.Hex(),
+		Content:   m.Content,
+		Sender:    sender.ToProto(),
+		Edited:    m.Edited,
+		Deleted:   m.Deleted,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}
+
+	if m.DeletedAt.Unix() != 0 {
+		protoMessage.DeletedAt, err = ptypes.TimestampProto(m.DeletedAt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return protoMessage, nil
 }

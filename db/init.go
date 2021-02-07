@@ -16,7 +16,8 @@ var (
 
 func Configure() error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 
 	opts := options.Client()
 	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", config.Map.Secrets.Db.Host, config.Map.Secrets.Db.Port))
