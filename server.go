@@ -24,9 +24,11 @@ import (
 )
 
 var (
-	server *grpc.Server
-	port   *int
-	host   *string
+	configMap *config.ConfigMap
+	server    *grpc.Server
+	err       error
+	port      *int
+	host      *string
 )
 
 func init() {
@@ -34,19 +36,19 @@ func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
 	server = grpc.NewServer()
-	port = flag.Int("port", 55283, "gRPC server port")
-	host = flag.String("host", "0.0.0.0", "gRPC server host")
-	configFileName := flag.String("config-file", "config.yml", "config.yaml file")
+	configFileName := flag.String("config-file", "config.hcl", "config.hcl file")
 
 	flag.Parse()
 	log.Printf("Loading ConfigMap from file: [%s]", *configFileName)
 
-	if err := config.Load(*configFileName); err != nil {
+	if configMap, err = config.LoadFile(*configFileName); err != nil {
 		log.Fatal(fmt.Errorf("could not load config: %v", err))
 	}
 
-	if err := sentry.Init(sentry.ClientOptions{Dsn: config.Map.Secrets.SentryDsn}); err != nil {
-		log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
+	if configMap.Sentry.Enabled {
+		if err := sentry.Init(sentry.ClientOptions{Dsn: configMap.Sentry.Dsn}); err != nil {
+			log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
+		}
 	}
 
 	if err := redis.Configure(); err != nil {
@@ -106,7 +108,7 @@ func main() {
 
 	reflection.Register(server)
 
-	log.Println(fmt.Sprintf("Server running in tcp:%s:%d", *host, *port))
+	log.Println(fmt.Sprintf("Server running in tcp:%s:%d", configMap.Listener.Host, configMap.Listener.Port))
 	if err := server.Serve(listener); err != nil {
 		sentry.CaptureException(err)
 		log.Fatal(fmt.Errorf("could not serve grpc.tcp.listener :%v", err))

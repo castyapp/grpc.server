@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/jwt"
@@ -17,6 +18,7 @@ import (
 )
 
 type Service struct {
+	c *config.ConfMap
 	proto.UnimplementedAuthServiceServer
 }
 

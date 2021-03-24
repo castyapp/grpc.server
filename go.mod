@@ -9,6 +9,7 @@ require (
 	github.com/go-ini/ini v1.62.0 // indirect
 	github.com/go-redis/redis/v8 v8.4.9
 	github.com/golang/protobuf v1.4.3
+	github.com/hashicorp/hcl v1.0.0
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/mongo-driver v1.4.5

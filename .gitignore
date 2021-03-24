@@ -1,16 +1,3 @@
-.env
-.idea
-client
-data
 .DS_Store
-config.yml
-config.yaml
-config/*
-!config.example.yml
-!config/config.go
-uploads
-Caddyfile
-.DS_Store
+config.hcl
 server
-docker.config.yml
-build.sh

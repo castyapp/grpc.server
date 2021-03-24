@@ -149,8 +149,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		"updated_at":          time.Now(),
 	}
 
-	_, err = thCollection.InsertOne(ctx, theater)
-	if err != nil {
+	if _, err = thCollection.InsertOne(ctx, theater); err != nil {
 		sentry.CaptureException(fmt.Errorf("could not create user!: %v", err))
 		_, err := collection.DeleteOne(ctx, bson.M{"_id": resultID})
 		if err != nil {

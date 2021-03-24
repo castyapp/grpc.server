@@ -2,39 +2,39 @@ package google
 
 import (
 	"context"
-	"fmt"
+	"time"
+
 	"github.com/CastyLab/grpc.server/config"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"io/ioutil"
-	"time"
 )
 
 var (
-	err error
-	jsonConfig []byte
+	err         error
+	jsonConfig  []byte
 	oauthClient *oauth2.Config
-	scopes = []string{
+	scopes      = []string{
 		"profile",
 		"email",
 		"openid",
 	}
 )
 
-func Configure() error {
-	jsonConfig, err = ioutil.ReadFile(config.Map.Secrets.Oauth.Google)
-	if err != nil {
-		return fmt.Errorf("could not read google secret config file :%v", err)
-	}
-	oauthClient, err = google.ConfigFromJSON(jsonConfig, scopes...)
-	if err != nil {
-		return fmt.Errorf("could not parse google secret config file :%v", err)
+func Configure(c *config.ConfigMap) error {
+	oauthClient = &oauth2.Config{
+		ClientID:     c.Oauth.Google.ClientID,
+		ClientSecret: c.Oauth.Google.ClientSecret,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  c.Oauth.Google.AuthUri,
+			TokenURL: c.Oauth.Google.TokenUri,
+		},
+		RedirectURL: c.Oauth.Google.RedirectUri,
+		Scopes:      scopes,
 	}
 	return nil
 }
 
 func Authenticate(code string) (*oauth2.Token, error) {
-	mCtx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
+	mCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return oauthClient.Exchange(mCtx, code, oauth2.AccessTypeOffline)
 }

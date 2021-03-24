@@ -1,68 +1,109 @@
 package config
 
 import (
-	"fmt"
-	"log"
-	"os"
+	"io/ioutil"
 
-	"gopkg.in/yaml.v2"
+	"github.com/hashicorp/hcl"
 )
 
-type ConfMap struct {
-	App struct {
-		Version string `yaml:"version"`
-		Debug   bool   `yaml:"debug"`
-		Env     string `yaml:"env"`
-	} `yaml:"app"`
-	Secrets struct {
-		Db struct {
-			Host string `yaml:"host"`
-			Port int    `yaml:"port"`
-			User string `yaml:"user"`
-			Pass string `yaml:"pass"`
-			Name string `yaml:"name"`
-		} `yaml:"db"`
-		Oauth struct {
-			Discord string `yaml:"discord"`
-			Google  string `yaml:"google"`
-			Spotify string `yaml:"spotify"`
-		} `yaml:"oauth"`
-		Redis struct {
-			Addr         string   `yaml:"addr"`
-			Replicaset   bool     `yaml:"replicaset"`
-			MasterName   string   `yaml:"masterName"`
-			Sentinels    []string `yaml:"sentinels"`
-			Port         int      `yaml:"port"`
-			Pass         string   `yaml:"pass"`
-			SentinelPass string   `yaml:"sentinel_pass"`
-		} `yaml:"redis"`
-		JWT struct {
-			ExpireTime            int    `yaml:"expire_time"`
-			RefreshTokenValidTime int    `yaml:"refresh_token_valid_time"`
-			AccessTokenSecret     string `yaml:"access_token_secret"`
-			RefreshTokenSecret    string `yaml:"refresh_token_secret"`
-		} `yaml:"jwt"`
-		ObjectStorage struct {
-			Endpoint  string `yaml:"endpoint"`
-			Region    string `yaml:"region"`
-			AccessKey string `yaml:"access_key"`
-			SecretKey string `yaml:"secret_key"`
-		} `yaml:"object_storage"`
-		SentryDsn      string `yaml:"sentry_dsn"`
-		HcaptchaSecret string `yaml:"hcaptcha_secret"`
-	} `yaml:"secrets"`
+type ConfigMap struct {
+	Debug     bool            `hcl:"debug"`
+	Env       string          `hcl:"env"`
+	Metrics   bool            `hcl:"metrics"`
+	Timezone  string          `hcl:"timezone"`
+	Listener  GrpcListener    `hcl:"listener,block"`
+	Redis     RedisConfig     `hcl:"redis,block"`
+	DB        DBConfig        `hcl:"db,block"`
+	Oauth     OauthConfig     `hcl:"oauth,block"`
+	S3        S3Config        `hcl:"s3,block"`
+	Sentry    SentryConfig    `hcl:"sentry,block"`
+	JWT       JWTConfig       `hcl:"jwt,block"`
+	Recaptcha RecaptchaConfig `hcl:"recaptcha,block"`
 }
 
-var Map = new(ConfMap)
+type GrpcListener struct {
+	Host string `hcl:"host"`
+	Port int    `hcl:"port"`
+}
 
-func Load(filename string) error {
-	file, err := os.Open(filename)
+type RedisConfig struct {
+	MasterName   string   `hcl:"master_name"`
+	Sentinels    []string `hcl:"sentinels"`
+	Pass         string   `hcl:"pass"`
+	SentinelPass string   `hcl:"sentinel_pass"`
+}
+
+type DBConfig struct {
+	Name string `hcl:"name"`
+	Host string `hcl:"host"`
+	Port int    `hcl:"port"`
+	User string `hcl:"user"`
+	Pass string `hcl:"pass"`
+}
+
+type OauthClient struct {
+	Enabled      bool   `hcl:"enabled"`
+	ClientID     string `hcl:"client_id"`
+	ClientSecret string `hcl:"client_secret"`
+	AuthUri      string `hcl:"auth_uri"`
+	TokenUri     string `hcl:"token_uri"`
+	RedirectUri  string `hcl:"redirect_uri"`
+}
+
+type OauthConfig struct {
+	RegistrationByOauth bool        `hcl:"registration_by_oauth"`
+	Google              OauthClient `hcl:"google,block"`
+	Spotify             OauthClient `hcl:"spotify,block"`
+}
+
+type S3Config struct {
+	Endpoint  string `hcl:"endpoint"`
+	AccessKey string `hcl:"access_key"`
+	SecretKey string `hcl:"secret_key"`
+}
+
+type SentryConfig struct {
+	Enabled bool   `hcl:"enabled"`
+	Dsn     string `hcl:"dsn"`
+}
+
+type JWTExpiresAt struct {
+	Type  string `hcl:"type"`
+	Value int64  `hcl:"value"`
+}
+
+type JWTToken struct {
+	Secret    string       `hcl:"secret"`
+	ExpiresAt JWTExpiresAt `hcl:"expires_at,block"`
+}
+
+type JWTConfig struct {
+	AccessToken  JWTToken `hcl:"access_token,block"`
+	RefreshToken JWTToken `hcl:"refresh_token,block"`
+}
+
+type RecaptchaConfig struct {
+	Enabled bool   `hcl:"enabled"`
+	Type    string `hcl:"type"`
+	Secret  string `hcl:"secret"`
+}
+
+func LoadFile(filename string) (c *ConfigMap, err error) {
+
+	d, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("could not open config file: %v", err)
+		return nil, err
 	}
-	if err := yaml.NewDecoder(file).Decode(&Map); err != nil {
-		return fmt.Errorf("could not decode config file: %v", err)
+
+	obj, err := hcl.Parse(string(d))
+	if err != nil {
+		return nil, err
 	}
-	log.Printf("ConfigMap Loaded: [version: %s]", Map.App.Version)
-	return nil
+
+	// Build up the result
+	if err := hcl.DecodeObject(&c, obj); err != nil {
+		return nil, err
+	}
+
+	return
 }

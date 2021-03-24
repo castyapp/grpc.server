@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/db/models"
 	"github.com/CastyLab/grpc.server/helpers"
@@ -16,6 +17,7 @@ import (
 )
 
 type Service struct {
+	c *config.ConfMap
 	proto.UnimplementedMessagesServiceServer
 }
 

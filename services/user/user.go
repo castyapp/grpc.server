@@ -7,6 +7,7 @@ import (
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
+	"github.com/CastyLab/grpc.server/config"
 	"github.com/CastyLab/grpc.server/db"
 	"github.com/CastyLab/grpc.server/helpers"
 	"github.com/CastyLab/grpc.server/services/auth"
@@ -18,6 +19,7 @@ import (
 )
 
 type Service struct {
+	c *config.ConfMap
 	proto.UnimplementedUserServiceServer
 }
 
