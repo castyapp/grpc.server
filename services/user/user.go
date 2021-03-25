@@ -7,9 +7,10 @@ import (
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +19,7 @@ import (
 )
 
 type Service struct {
+	c *config.ConfigMap
 	proto.UnimplementedUserServiceServer
 }
 

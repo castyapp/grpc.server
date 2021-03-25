@@ -3,9 +3,9 @@ package user
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/services"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/services"
+	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/jwt"
-	"github.com/CastyLab/grpc.server/services"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/services"
 	"github.com/getsentry/sentry-go"
 	"github.com/golang/protobuf/ptypes/any"
 	"go.mongodb.org/mongo-driver/bson"
@@ -149,8 +149,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 		"updated_at":          time.Now(),
 	}
 
-	_, err = thCollection.InsertOne(ctx, theater)
-	if err != nil {
+	if _, err = thCollection.InsertOne(ctx, theater); err != nil {
 		sentry.CaptureException(fmt.Errorf("could not create user!: %v", err))
 		_, err := collection.DeleteOne(ctx, bson.M{"_id": resultID})
 		if err != nil {

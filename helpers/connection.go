@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/db/models"
 	"github.com/golang/protobuf/ptypes"
 )
 

@@ -3,19 +3,20 @@ package user
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/oauth/spotify"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/oauth/spotify"
+	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"time"
 )
 
 func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionRequest) (*proto.ConnectionsResponse, error) {
@@ -50,7 +51,7 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 		updatePayload = bson.M{
 			"$set": bson.M{
 				"access_token": token.AccessToken,
-				"updated_at": time.Now(),
+				"updated_at":   time.Now(),
 			},
 		}
 	)
@@ -67,9 +68,9 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 		connection.UpdatedAt = time.Now()
 
 		return &proto.ConnectionsResponse{
-			Status:  "success",
-			Code:    http.StatusOK,
-			Result:  []*proto.Connection{helpers.NewProtoConnection(connection)},
+			Status: "success",
+			Code:   http.StatusOK,
+			Result: []*proto.Connection{helpers.NewProtoConnection(connection)},
 		}, nil
 	}
 
@@ -93,7 +94,6 @@ func (s *Service) GetConnection(ctx context.Context, req *proto.ConnectionReques
 		"user_id": user.ID,
 	}
 
-
 	if err := collection.FindOne(ctx, filter).Decode(connection); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, status.Error(codes.NotFound, "Could not find connection!")
@@ -102,9 +102,9 @@ func (s *Service) GetConnection(ctx context.Context, req *proto.ConnectionReques
 	}
 
 	return &proto.ConnectionsResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  []*proto.Connection{helpers.NewProtoConnection(connection)},
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: []*proto.Connection{helpers.NewProtoConnection(connection)},
 	}, nil
 }
 
@@ -120,7 +120,7 @@ func (s *Service) GetConnections(ctx context.Context, req *proto.AuthenticateReq
 		return nil, err
 	}
 
-	cursor, err := collection.Find(ctx, bson.M{ "user_id": user.ID })
+	cursor, err := collection.Find(ctx, bson.M{"user_id": user.ID})
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find connections!")
 	}
@@ -134,9 +134,9 @@ func (s *Service) GetConnections(ctx context.Context, req *proto.AuthenticateReq
 	}
 
 	return &proto.ConnectionsResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  connections,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: connections,
 	}, nil
 
 }

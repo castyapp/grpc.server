@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
 	"net/http"

@@ -5,12 +5,12 @@
 
 ## Pull Docker Image
 ```bash
-$ docker pull castylab/grpc:latest
+$ docker pull castyapp/grpc:latest
 ```
 
 ## Run docker container
 ```bash
-$ docker run -p 55283:55283 castylab/grpc
+$ docker run -p 55283:55283 castyapp/grpc
 ```
 
 ## Prerequisites
@@ -21,48 +21,71 @@ $ docker run -p 55283:55283 castylab/grpc
 
 ## Clone the project
 ```bash
-$ git clone https://github.com/CastyLab/grpc.server.git
+$ git clone https://github.com/castyapp/grpc.server.git
 ```
 
 ## Configuraition
-Make a copy of `config.example.yml` for your own configuration. save it as `config.yml` in your work directory.
+Make a copy of `example.config.hcl` for your own configuration. save it as `config.hcl` in your work directory.
 ```bash
-$ cp config.example.yml config.yml
+$ cp example.config.hcl config.hcl
 ```
 
 ## Environments
 ### Mongodb configuration
 Put your mongodb connection here
-```yaml
-secrets:
-  db:
-    name: "casty"
-    host: "localhost"
-    port: 27017
-    user: "service"
-    pass: "super-secure-password"
+```hcl
+db {
+  name = "casty"
+  host = "localhost"
+  port = 27017
+  user = "service"
+  pass = "super-secure-password"
+}
+```
+
+### Redis configuration
+Put your redis connection here
+```hcl
+# Redis configurations
+redis {
+  # if you wish to use redis cluster, set this value to true
+  # If cluster is true, sentinels is required
+  # If cluster is false, addr is required
+  cluster     = false
+  master_name = "casty"
+  addr        = "127.0.0.1:26379"
+  sentinels   = [
+    "127.0.0.1:26379"
+  ]
+  pass = "super-secure-password"
+  sentinel_pass = "super-secure-sentinels-password"
+}
 ```
 
 ### JWT configuration
 We use JWT for our authentication method
-```yaml
-secrets:
-  jwt:
-    expire_time: 60
-    refresh_token_valid_time: 7
-    access_token_secret: "super-secure-access-token-secret"
-    refresh_token_secret: "super-secure-refresh-token-secret"
-```
-
-### Other environments
-```yaml
-# Storage path is used for upload avatars, banners etc...
-# This environment is useful for shared volumes between containers
-storage_path: "your-storage-path"
-
-# Sentry DSN path *optional
-secrets:
-    sentry_dsn: "your-sentry-project-dsn"
+```hcl
+# JWT secrets
+jwt {
+  access_token {
+    # make sure to use a strong secret key
+    secret = "drWRU76y2Pc37TgjD5J8xcWg9e"
+    # If you wish to change valid duration of a access_token, change this value
+    expires_at {
+      type  = "days" # can be [seconds|minutes|hours|days]
+      value = 1
+    }
+  }
+  refresh_token {
+    # make sure to use a strong secret key
+    secret = "S3pXMmmjWFYVPBSLeYdYCve5Ca"
+    # If you wish to change valid duration of a refresh_token, change this value
+    expires_at {
+      type  = "days" # can be [seconds|minutes|hours|days]
+      value = 7
+    }
+  }
+}
 ```
 
 You're ready to Go!

@@ -3,8 +3,8 @@ package user
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/services/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"net/http"

@@ -6,9 +6,10 @@ import (
 	"regexp"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
@@ -17,6 +18,7 @@ import (
 )
 
 type Service struct {
+	c *config.ConfigMap
 	proto.UnimplementedAuthServiceServer
 }
 

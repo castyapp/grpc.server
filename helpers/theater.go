@@ -3,8 +3,8 @@ package helpers
 import (
 	"context"
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/db/models"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 )

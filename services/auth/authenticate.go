@@ -2,8 +2,8 @@ package auth
 
 import (
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strings"
