@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/CastyLab/grpc.server/storage"
+	"github.com/castyapp/grpc.server/storage"
 	"github.com/minio/minio-go"
 )
 

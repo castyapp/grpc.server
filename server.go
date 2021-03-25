@@ -8,16 +8,16 @@ import (
 	"time"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/config"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/jwt"
-	"github.com/CastyLab/grpc.server/oauth"
-	"github.com/CastyLab/grpc.server/redis"
-	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/CastyLab/grpc.server/services/message"
-	"github.com/CastyLab/grpc.server/services/theater"
-	"github.com/CastyLab/grpc.server/services/user"
-	"github.com/CastyLab/grpc.server/storage"
+	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/oauth"
+	"github.com/castyapp/grpc.server/redis"
+	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/services/message"
+	"github.com/castyapp/grpc.server/services/theater"
+	"github.com/castyapp/grpc.server/services/user"
+	"github.com/castyapp/grpc.server/storage"
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -51,29 +51,29 @@ func init() {
 		}
 	}
 
-	if err := redis.Configure(); err != nil {
+	if err := redis.Configure(configMap); err != nil {
 		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
 	}
 
-	if err := jwt.Load(); err != nil {
+	if err := jwt.Load(configMap); err != nil {
 		err := fmt.Errorf("could not load jwt configuration: %v", err)
 		sentry.CaptureException(err)
 		log.Fatal(err)
 	}
 
-	if err := oauth.ConfigureOAUTHClients(); err != nil {
+	if err := oauth.ConfigureOAUTHClients(configMap); err != nil {
 		err := fmt.Errorf("could not load oauth clients configurations: %v", err)
 		sentry.CaptureException(err)
 		log.Fatal(err)
 	}
 
-	if err := storage.Configure(); err != nil {
+	if err := storage.Configure(configMap); err != nil {
 		err := fmt.Errorf("could not configure s3 bucket storage client: %v", err)
 		sentry.CaptureException(err)
 		log.Fatal(err)
 	}
 
-	if err := db.Configure(); err != nil {
+	if err := db.Configure(configMap); err != nil {
 		err := fmt.Errorf("could not configure mongodb client: %v", err)
 		sentry.CaptureException(err)
 		log.Fatal(err)

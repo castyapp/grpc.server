@@ -16,8 +16,10 @@ var defaultConfig = &ConfigMap{
 		Port: 8000,
 	},
 	Redis: RedisConfig{
+		Cluster:      false,
 		MasterName:   "casty",
 		Sentinels:    []string{"127.0.0.1:26379"},
+		Addr:         "127.0.0.1:26379",
 		Pass:         "super-secure-password",
 		SentinelPass: "super-secure-sentinels-password",
 	},

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/CastyLab/grpc.server/config"
+	"github.com/castyapp/grpc.server/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -14,17 +14,17 @@ var (
 	Connection *mongo.Database
 )
 
-func Configure() error {
+func Configure(c *config.ConfigMap) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	opts := options.Client()
-	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", config.Map.Secrets.Db.Host, config.Map.Secrets.Db.Port))
+	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", c.DB.Host, c.DB.Port))
 	opts.SetAuth(options.Credential{
-		Username:   config.Map.Secrets.Db.User,
-		Password:   config.Map.Secrets.Db.Pass,
-		AuthSource: config.Map.Secrets.Db.Name,
+		Username:   c.DB.User,
+		Password:   c.DB.Pass,
+		AuthSource: c.DB.Name,
 	})
 
 	client, err := mongo.NewClient(opts)
@@ -36,6 +36,6 @@ func Configure() error {
 		return fmt.Errorf("could not connect to mongodb client: %v", err)
 	}
 
-	Connection = client.Database(config.Map.Secrets.Db.Name)
+	Connection = client.Database(c.DB.Name)
 	return nil
 }

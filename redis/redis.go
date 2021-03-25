@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/CastyLab/grpc.server/config"
+	"github.com/castyapp/grpc.server/config"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis/v8"
 )
@@ -14,30 +14,30 @@ var (
 	Client *redis.Client
 )
 
-func Configure() error {
+func Configure(c *config.ConfigMap) error {
 
-	if config.Map.Secrets.Redis.Replicaset {
+	if c.Redis.Cluster {
 		Client = redis.NewFailoverClient(&redis.FailoverOptions{
-			SentinelAddrs:    config.Map.Secrets.Redis.Sentinels,
-			SentinelPassword: config.Map.Secrets.Redis.SentinelPass,
-			Password:         config.Map.Secrets.Redis.Pass,
-			MasterName:       config.Map.Secrets.Redis.MasterName,
+			SentinelAddrs:    c.Redis.Sentinels,
+			SentinelPassword: c.Redis.SentinelPass,
+			Password:         c.Redis.Pass,
+			MasterName:       c.Redis.MasterName,
 			DB:               0,
 		})
 	} else {
 		Client = redis.NewClient(&redis.Options{
-			Addr:     config.Map.Secrets.Redis.Addr,
-			Password: config.Map.Secrets.Redis.Pass,
+			Addr:     c.Redis.Addr,
+			Password: c.Redis.Pass,
 		})
 	}
 
 	cmd := Client.Ping(context.Background())
 	if res := cmd.Val(); res != "PONG" {
 
-		if config.Map.Secrets.Redis.Replicaset {
-			log.Println("SentinelAddrs: ", config.Map.Secrets.Redis.Sentinels)
+		if c.Redis.Cluster {
+			log.Println(fmt.Sprintf("Redis: SentinelAddrs [%s]", c.Redis.Sentinels))
 		} else {
-			log.Println("Addr: ", config.Map.Secrets.Redis.Sentinels)
+			log.Println(fmt.Sprintf("Redis: Addr [%s]", c.Redis.Addr))
 		}
 
 		mErr := fmt.Errorf("could not ping the redis server: %v", cmd.Err())

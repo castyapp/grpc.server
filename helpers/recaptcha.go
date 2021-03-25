@@ -1,49 +1,50 @@
 package helpers
 
-import (
-	"encoding/json"
-	"errors"
-	"github.com/CastyLab/grpc.server/config"
-	"net/http"
-	"net/url"
-	"strings"
-)
+//import (
+//"encoding/json"
+//"errors"
+//"net/http"
+//"net/url"
+//"strings"
 
-type VerifyResponse struct {
-	Success       bool       `json:"success"`
-	ChallengeTs   string     `json:"challenge_ts"`
-	Hostname      string     `json:"hostname"`
-	ErrorCodes    []string   `json:"error-codes"`
-}
+//"github.com/castyapp/grpc.server/config"
+//)
 
-func VerifyRecaptcha(code string) (bool, error) {
+//type VerifyResponse struct {
+//Success     bool     `json:"success"`
+//ChallengeTs string   `json:"challenge_ts"`
+//Hostname    string   `json:"hostname"`
+//ErrorCodes  []string `json:"error-codes"`
+//}
 
-	verifyResp := new(VerifyResponse)
+//func VerifyRecaptcha(code string) (bool, error) {
 
-	params := url.Values{}
-	params.Add("secret", config.Map.Secrets.HcaptchaSecret)
-	params.Add("response", code)
+//verifyResp := new(VerifyResponse)
 
-	request, err := http.NewRequest("POST", "https://www.google.com/recaptcha/api/siteverify", strings.NewReader(params.Encode()))
-	if err != nil {
-		return false, err
-	}
+//params := url.Values{}
+//params.Add("secret", config.Map.Secrets.HcaptchaSecret)
+//params.Add("response", code)
 
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+//request, err := http.NewRequest("POST", "https://www.google.com/recaptcha/api/siteverify", strings.NewReader(params.Encode()))
+//if err != nil {
+//return false, err
+//}
 
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return false, err
-	}
+//request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	decoder := json.NewDecoder(response.Body)
-	if err := decoder.Decode(&verifyResp); err != nil {
-		return false, err
-	}
+//response, err := http.DefaultClient.Do(request)
+//if err != nil {
+//return false, err
+//}
 
-	if verifyResp.Success == true {
-		return true, nil
-	}
+//decoder := json.NewDecoder(response.Body)
+//if err := decoder.Decode(&verifyResp); err != nil {
+//return false, err
+//}
 
-	return false, errors.New("could not verify captcha")
-}
+//if verifyResp.Success == true {
+//return true, nil
+//}
+
+//return false, errors.New("could not verify captcha")
+//}

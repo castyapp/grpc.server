@@ -3,9 +3,9 @@ package oauth
 import (
 	"fmt"
 
-	"github.com/CastyLab/grpc.server/config"
-	"github.com/CastyLab/grpc.server/oauth/google"
-	"github.com/CastyLab/grpc.server/oauth/spotify"
+	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/oauth/google"
+	"github.com/castyapp/grpc.server/oauth/spotify"
 )
 
 func ConfigureOAUTHClients(c *config.ConfigMap) error {

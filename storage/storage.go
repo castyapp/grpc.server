@@ -1,17 +1,17 @@
 package storage
 
 import (
-	"github.com/CastyLab/grpc.server/config"
+	"github.com/castyapp/grpc.server/config"
 	"github.com/minio/minio-go"
 )
 
 var Client *minio.Client
 
-func Configure() (err error) {
+func Configure(c *config.ConfigMap) (err error) {
 	Client, err = minio.NewV4(
-		config.Map.Secrets.ObjectStorage.Endpoint,
-		config.Map.Secrets.ObjectStorage.AccessKey,
-		config.Map.Secrets.ObjectStorage.SecretKey,
+		c.S3.Endpoint,
+		c.S3.AccessKey,
+		c.S3.SecretKey,
 		false,
 	)
 	if err != nil {

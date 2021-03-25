@@ -27,7 +27,9 @@ type GrpcListener struct {
 }
 
 type RedisConfig struct {
+	Cluster      bool     `hcl:"cluster"`
 	MasterName   string   `hcl:"master_name"`
+	Addr         string   `hcl:"addr"`
 	Sentinels    []string `hcl:"sentinels"`
 	Pass         string   `hcl:"pass"`
 	SentinelPass string   `hcl:"sentinel_pass"`
@@ -69,7 +71,7 @@ type SentryConfig struct {
 
 type JWTExpiresAt struct {
 	Type  string `hcl:"type"`
-	Value int64  `hcl:"value"`
+	Value int    `hcl:"value"`
 }
 
 type JWTToken struct {

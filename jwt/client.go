@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/CastyLab/grpc.server/config"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
+	"time"
+
+	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/db"
+	"github.com/castyapp/grpc.server/db/models"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 var (
@@ -23,11 +24,11 @@ var (
 )
 
 // read the key files before starting http handlers
-func Load() error {
-	expireTimeInt = config.Map.Secrets.JWT.ExpireTime
-	expireTimeRefreshedTokenInt = config.Map.Secrets.JWT.RefreshTokenValidTime
-	accessTokenSecret = []byte(config.Map.Secrets.JWT.AccessTokenSecret)
-	refreshTokenSecret = []byte(config.Map.Secrets.JWT.RefreshTokenSecret)
+func Load(c *config.ConfigMap) error {
+	expireTimeInt = c.JWT.AccessToken.ExpiresAt.Value
+	expireTimeRefreshedTokenInt = c.JWT.RefreshToken.ExpiresAt.Value
+	accessTokenSecret = []byte(c.JWT.AccessToken.Secret)
+	refreshTokenSecret = []byte(c.JWT.RefreshToken.Secret)
 	return nil
 }
 
@@ -51,7 +52,7 @@ func createAuthToken(userid string) (token string, err error) {
 
 	// create a signer for rsa 256
 	authJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Subject: userid,
+		Subject:   userid,
 		ExpiresAt: authTokenExp,
 	})
 
@@ -71,13 +72,13 @@ func createRefreshToken(ctx context.Context, userid string) (refreshTokenString 
 	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeRefreshedTokenInt))
 
 	var (
-		result *mongo.InsertOneResult
+		result     *mongo.InsertOneResult
 		collection = db.Connection.Collection("refreshed_tokens")
 	)
 
 	result, err = collection.InsertOne(ctx, bson.M{
-		"user_id": userObjectId,
-		"valid": true,
+		"user_id":    userObjectId,
+		"valid":      true,
 		"created_at": time.Now(),
 		"expires_at": refreshTokenExp,
 	})
@@ -89,8 +90,8 @@ func createRefreshToken(ctx context.Context, userid string) (refreshTokenString 
 
 	// create a signer for rsa 256
 	refreshJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Id: resultID.Hex(),
-		Subject: userid,
+		Id:        resultID.Hex(),
+		Subject:   userid,
 		ExpiresAt: refreshTokenExp.Unix(),
 	})
 
@@ -103,7 +104,7 @@ func checkRefreshToken(ctx context.Context, id string) (*models.RefreshedToken, 
 
 	var (
 		refreshedToken = new(models.RefreshedToken)
-		collection = db.Connection.Collection("refreshed_tokens")
+		collection     = db.Connection.Collection("refreshed_tokens")
 	)
 
 	refreshedTokenObjectId, err := primitive.ObjectIDFromHex(id)
@@ -111,7 +112,7 @@ func checkRefreshToken(ctx context.Context, id string) (*models.RefreshedToken, 
 		return nil, err
 	}
 
-	err = collection.FindOne(ctx, bson.M{ "_id": refreshedTokenObjectId}).Decode(refreshedToken)
+	err = collection.FindOne(ctx, bson.M{"_id": refreshedTokenObjectId}).Decode(refreshedToken)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func checkRefreshToken(ctx context.Context, id string) (*models.RefreshedToken, 
 	if refreshedToken.ID.Hex() == id && refreshedToken.Valid {
 		return refreshedToken, nil
 	}
-	
+
 	return nil, errors.New("could not find refreshed token or maybe expired")
 }
 
@@ -179,11 +180,11 @@ func RefreshToken(ctx context.Context, refreshTokenString string) (token, refres
 func deleteRefreshToken(ctx context.Context, jti primitive.ObjectID) (err error) {
 
 	var (
-		result *mongo.DeleteResult
+		result     *mongo.DeleteResult
 		collection = db.Connection.Collection("refreshed_tokens")
 	)
 
-	result, err = collection.DeleteOne(ctx, bson.M{ "_id": jti })
+	result, err = collection.DeleteOne(ctx, bson.M{"_id": jti})
 	if err != nil {
 		return
 	}
@@ -220,7 +221,8 @@ func DecodeAuthToken(token []byte) (user *models.User, err error) {
 		return
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 
 	objectId, err := primitive.ObjectIDFromHex(authTokenClaims.Subject)
 	if err != nil {

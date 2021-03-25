@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/CastyLab/grpc.server/config"
+	"github.com/castyapp/grpc.server/config"
 	"golang.org/x/oauth2"
 )
 
