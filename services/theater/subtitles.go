@@ -2,8 +2,11 @@ package theater
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -11,9 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
-	"net/http"
-	"time"
 )
 
 // Get all subtitles from theater
@@ -22,20 +22,20 @@ func (s *Service) AddSubtitles(ctx context.Context, req *proto.AddSubtitlesReque
 	var (
 		insertMap              = make([]interface{}, 0)
 		mediaSource            = new(models.MediaSource)
-		mediaSourcesCollection = db.Connection.Collection("media_sources")
-		subtitlesCollection    = db.Connection.Collection("subtitles")
+		mediaSourcesCollection = s.db.Collection("media_sources")
+		subtitlesCollection    = s.db.Collection("subtitles")
 		failedResponse         = status.Error(codes.Internal, "Could not add subtitles, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
 		mediaSourceObjectID, _ = primitive.ObjectIDFromHex(req.MediaSourceId)
-		findFilter = bson.M{
-			"_id": mediaSourceObjectID,
+		findFilter             = bson.M{
+			"_id":     mediaSourceObjectID,
 			"user_id": user.ID,
 		}
 	)
@@ -46,12 +46,12 @@ func (s *Service) AddSubtitles(ctx context.Context, req *proto.AddSubtitlesReque
 
 	for _, subtitle := range req.Subtitles {
 		insertMap = append(insertMap, bson.M{
-			"user_id": user.ID,
+			"user_id":         user.ID,
 			"media_source_id": mediaSource.ID,
-			"file": subtitle.File,
-			"lang": subtitle.Lang,
-			"created_at": time.Now(),
-			"updated_at": time.Now(),
+			"file":            subtitle.File,
+			"lang":            subtitle.Lang,
+			"created_at":      time.Now(),
+			"updated_at":      time.Now(),
 		})
 	}
 
@@ -71,20 +71,20 @@ func (s *Service) AddSubtitles(ctx context.Context, req *proto.AddSubtitlesReque
 func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterSubtitlesResponse, error) {
 
 	var (
-		err error
-		authenticated           = false
-		authUser                = new(models.User)
-		dbTheater               = new(models.Theater)
-		mediaSource             = new(models.MediaSource)
-		subtitles               = make([]*proto.Subtitle, 0)
-		theatersCollection      = db.Connection.Collection("theaters")
-		mediaSourcesCollection  = db.Connection.Collection("media_sources")
-		collection              = db.Connection.Collection("subtitles")
-		failedResponse          = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
+		err                    error
+		authenticated          = false
+		authUser               = new(models.User)
+		dbTheater              = new(models.Theater)
+		mediaSource            = new(models.MediaSource)
+		subtitles              = make([]*proto.Subtitle, 0)
+		theatersCollection     = s.db.Collection("theaters")
+		mediaSourcesCollection = s.db.Collection("media_sources")
+		collection             = s.db.Collection("subtitles")
+		failedResponse         = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
 	)
 
 	if req.AuthRequest != nil {
-		if authUser, err = auth.Authenticate(req.AuthRequest); err != nil {
+		if authUser, err = auth.Authenticate(s.db, req.AuthRequest); err != nil {
 			return nil, err
 		}
 		authenticated = true
@@ -95,7 +95,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRe
 		return nil, status.Error(codes.NotFound, "Could not parse theater id!")
 	}
 
-	if err := theatersCollection.FindOne(ctx, bson.M{ "media_source_id": mediaSourceObjectID }).Decode(dbTheater); err != nil {
+	if err := theatersCollection.FindOne(ctx, bson.M{"media_source_id": mediaSourceObjectID}).Decode(dbTheater); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater with this media source!")
 	}
 
@@ -113,7 +113,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRe
 		}
 	}
 
-	if err := mediaSourcesCollection.FindOne(ctx, bson.M{ "_id": dbTheater.MediaSourceId }).Decode(mediaSource); err != nil {
+	if err := mediaSourcesCollection.FindOne(ctx, bson.M{"_id": dbTheater.MediaSourceId}).Decode(mediaSource); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 
@@ -135,9 +135,9 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRe
 	}
 
 	return &proto.TheaterSubtitlesResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  subtitles,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: subtitles,
 	}, nil
 }
 
@@ -146,31 +146,31 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleR
 
 	var (
 		mediaSource    = new(models.Theater)
-		collection     = db.Connection.Collection("subtitles")
+		collection     = s.db.Collection("subtitles")
 		failedResponse = status.Error(codes.Internal, "Could not remove subtitle, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
 		mediaSourceObjectID, _ = primitive.ObjectIDFromHex(req.MediaSourceId)
-		findFilter = bson.M{
-			"_id": mediaSourceObjectID,
+		findFilter             = bson.M{
+			"_id":     mediaSourceObjectID,
 			"user_id": user.ID,
 		}
 	)
 
-	if err := db.Connection.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
+	if err := s.db.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 
 	var (
 		subtitleObjectID, _ = primitive.ObjectIDFromHex(req.SubtitleId)
-		filter = bson.M{
-			"_id": subtitleObjectID,
+		filter              = bson.M{
+			"_id":             subtitleObjectID,
 			"media_source_id": mediaSource.ID,
 		}
 	)

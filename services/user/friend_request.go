@@ -8,7 +8,6 @@ import (
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -22,11 +21,11 @@ func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.Authe
 
 	var (
 		friendRequests    = make([]*proto.FriendRequest, 0)
-		userCollection    = db.Connection.Collection("users")
-		friendsCollection = db.Connection.Collection("friends")
+		userCollection    = s.db.Collection("users")
+		friendsCollection = s.db.Collection("friends")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.db, req)
 	if err != nil {
 		return nil, err
 	}
@@ -72,13 +71,13 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 	var (
 		friendRequest     = new(models.Friend)
-		usersCollection   = db.Connection.Collection("users")
-		friendsCollection = db.Connection.Collection("friends")
-		notifsCollection  = db.Connection.Collection("notifications")
+		usersCollection   = s.db.Collection("users")
+		friendsCollection = s.db.Collection("friends")
+		notifsCollection  = s.db.Collection("notifications")
 		failedResponse    = status.Error(codes.Internal, "Could not accept friend request, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -176,15 +175,14 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Response, error) {
 
 	var (
-		database                = db.Connection
 		friend                  = new(models.User)
-		userCollection          = database.Collection("users")
-		friendsCollection       = database.Collection("friends")
-		notificationsCollection = database.Collection("notifications")
+		userCollection          = s.db.Collection("users")
+		friendsCollection       = s.db.Collection("friends")
+		notificationsCollection = s.db.Collection("notifications")
 		failedResponse          = status.Error(codes.Internal, "Could not create friend request, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/jwt"
 	"github.com/castyapp/grpc.server/services"
@@ -41,11 +40,10 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 
 	var (
 		user             = req.User
-		database         = db.Connection
 		validationErrors []*any.Any
 		existsUser       = new(models.User)
-		collection       = database.Collection("users")
-		thCollection     = database.Collection("theaters")
+		collection       = s.db.Collection("users")
+		thCollection     = s.db.Collection("theaters")
 	)
 
 	for _, invalid := range invalidUsernames {
@@ -134,7 +132,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 
 	resultID := result.InsertedID.(primitive.ObjectID)
 
-	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(ctx, resultID.Hex())
+	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(s.db, ctx, resultID.Hex())
 	if err != nil {
 		log.Println(err)
 		return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")

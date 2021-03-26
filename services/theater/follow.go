@@ -2,8 +2,10 @@ package theater
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -11,19 +13,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"time"
 )
 
 func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.AuthenticateRequest) (*proto.FollowedTheatersResponse, error) {
 
 	var (
-		database = db.Connection
-		theaters = make([]*proto.Theater, 0)
-		followsCollection = database.Collection("follows")
+		theaters          = make([]*proto.Theater, 0)
+		followsCollection = s.db.Collection("follows")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.db, req)
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +38,11 @@ func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.Authentica
 			continue
 		}
 		theater := new(models.Theater)
-		err := database.Collection("theaters").FindOne(ctx, bson.M{ "_id": follow.TheaterId }).Decode(theater)
+		err := s.db.Collection("theaters").FindOne(ctx, bson.M{"_id": follow.TheaterId}).Decode(theater)
 		if err != nil {
 			continue
 		}
-		protoTheater, err := helpers.NewTheaterProto(ctx, theater)
+		protoTheater, err := helpers.NewTheaterProto(s.db, ctx, theater)
 		if err != nil {
 			continue
 		}
@@ -51,22 +50,21 @@ func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.Authentica
 	}
 
 	return &proto.FollowedTheatersResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  theaters,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: theaters,
 	}, nil
 }
 
 func (s *Service) Follow(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
 
 	var (
-		database = db.Connection
-		theater  = new(models.Theater)
-		followsCollection = database.Collection("follows")
-		theaterCollection = database.Collection("theaters")
+		theater           = new(models.Theater)
+		followsCollection = s.db.Collection("follows")
+		theaterCollection = s.db.Collection("theaters")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +74,7 @@ func (s *Service) Follow(ctx context.Context, req *proto.TheaterAuthRequest) (*p
 		return nil, status.Error(codes.NotFound, "Could not parse theater id!")
 	}
 
-	if err := theaterCollection.FindOne(ctx, bson.M{ "_id": theaterObjectID }).Decode(theater); err != nil {
+	if err := theaterCollection.FindOne(ctx, bson.M{"_id": theaterObjectID}).Decode(theater); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
@@ -118,12 +116,11 @@ func (s *Service) Follow(ctx context.Context, req *proto.TheaterAuthRequest) (*p
 func (s *Service) Unfollow(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
 
 	var (
-		database = db.Connection
-		follow  = new(models.Follow)
-		followsCollection = database.Collection("follows")
+		follow            = new(models.Follow)
+		followsCollection = s.db.Collection("follows")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +139,7 @@ func (s *Service) Unfollow(ctx context.Context, req *proto.TheaterAuthRequest) (
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
-	deletedResult, err := followsCollection.DeleteOne(ctx, bson.M{ "_id": follow.ID })
+	deletedResult, err := followsCollection.DeleteOne(ctx, bson.M{"_id": follow.ID})
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not unfollow this theater!")
 	}

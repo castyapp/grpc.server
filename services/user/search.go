@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -18,7 +17,7 @@ import (
 func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*proto.SearchUserResponse, error) {
 
 	var (
-		collection    = db.Connection.Collection("users")
+		collection    = s.db.Collection("users")
 		emptyResponse = &proto.SearchUserResponse{
 			Status: "success",
 			Code:   http.StatusOK,
@@ -26,7 +25,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		}
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -2,31 +2,30 @@ package theater
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
-	"net/http"
-	"time"
 )
 
 func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
 
 	var (
-		database       = db.Connection
 		theater        = new(models.Theater)
 		updateMap      = bson.M{}
-		collection     = database.Collection("theaters")
+		collection     = s.db.Collection("theaters")
 		failedResponse = status.Error(codes.Internal, "Could not create theater, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "Unauthorized!")
 	}
@@ -49,10 +48,10 @@ func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthReque
 
 	if len(updateMap) > 0 {
 		updateMap["updated_at"] = time.Now()
-		if err := collection.FindOne(ctx, bson.M{ "user_id": user.ID }).Decode(theater); err != nil {
+		if err := collection.FindOne(ctx, bson.M{"user_id": user.ID}).Decode(theater); err != nil {
 			return nil, failedResponse
 		}
-		if _, err = collection.UpdateOne(ctx, bson.M{ "_id": theater.ID }, bson.M{ "$set": updateMap }); err != nil {
+		if _, err = collection.UpdateOne(ctx, bson.M{"_id": theater.ID}, bson.M{"$set": updateMap}); err != nil {
 			return nil, failedResponse
 		}
 		event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_UPDATED, req.Theater)

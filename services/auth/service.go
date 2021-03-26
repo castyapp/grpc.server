@@ -2,24 +2,38 @@ package auth
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"regexp"
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/castyapp/grpc.server/config"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Service struct {
-	c *config.ConfigMap
+	c  *config.ConfigMap
+	db *mongo.Database
 	proto.UnimplementedAuthServiceServer
+}
+
+func NewService(ctx context.Context) *Service {
+	database := ctx.Value("db")
+	if database == nil {
+		log.Panicln("db value is required in context!")
+	}
+	configMap := ctx.Value("cm")
+	if configMap == nil {
+		log.Panicln("configMap value is required in context!")
+	}
+	return &Service{db: database.(*mongo.Database), c: configMap.(*config.ConfigMap)}
 }
 
 func (s *Service) isEmail(user string) bool {
@@ -43,7 +57,7 @@ func ValidatePassword(user *models.User, pass string) bool {
 func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*proto.AuthResponse, error) {
 
 	var (
-		collection   = db.Connection.Collection("users")
+		collection   = s.db.Collection("users")
 		user         = new(models.User)
 		unauthorized = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
@@ -63,7 +77,7 @@ func (s *Service) Authenticate(ctx context.Context, req *proto.AuthRequest) (*pr
 
 	if ValidatePassword(user, req.Pass) {
 
-		token, refreshedToken, err := jwt.CreateNewTokens(ctx, user.ID.Hex())
+		token, refreshedToken, err := jwt.CreateNewTokens(s.db, ctx, user.ID.Hex())
 		if err != nil {
 			sentry.CaptureException(err)
 			return nil, status.Error(codes.Internal, "Could not create auth token, Please try again later!")

@@ -3,34 +3,35 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewNotificationProto(notif *models.Notification) (*proto.Notification, error) {
+func NewNotificationProto(db *mongo.Database, notif *models.Notification) (*proto.Notification, error) {
 
 	var (
 		readAt, _    = ptypes.TimestampProto(notif.ReadAt)
 		createdAt, _ = ptypes.TimestampProto(notif.CreatedAt)
 		updatedAt, _ = ptypes.TimestampProto(notif.UpdatedAt)
 		fromUser     = new(models.User)
-		mCtx, cancel = context.WithTimeout(context.Background(), 10 * time.Second)
+		mCtx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	)
 
 	defer cancel()
 
-	cursor := db.Connection.Collection("users").FindOne(mCtx, bson.M{
+	cursor := db.Collection("users").FindOne(mCtx, bson.M{
 		"_id": notif.FromUserId,
 	})
 	if err := cursor.Decode(&fromUser); err != nil {
 		return nil, err
 	}
 
-	protoMSG  := &proto.Notification{
+	protoMSG := &proto.Notification{
 		Id:        notif.ID.Hex(),
 		Type:      notif.Type,
 		Read:      notif.Read,
@@ -43,7 +44,7 @@ func NewNotificationProto(notif *models.Notification) (*proto.Notification, erro
 	switch notif.Type {
 	case proto.Notification_NEW_FRIEND:
 		notifFriendData := new(models.Friend)
-		cursor := db.Connection.Collection("friends").FindOne(mCtx, bson.M{
+		cursor := db.Collection("friends").FindOne(mCtx, bson.M{
 			"_id": notif.Extra,
 		})
 		if err := cursor.Decode(&notifFriendData); err != nil {
@@ -56,7 +57,7 @@ func NewNotificationProto(notif *models.Notification) (*proto.Notification, erro
 		protoMSG.Data = string(ntfJson)
 	case proto.Notification_NEW_THEATER_INVITE:
 		notifTheaterData := new(models.Theater)
-		cursor := db.Connection.Collection("theaters").FindOne(mCtx, bson.M{
+		cursor := db.Collection("theaters").FindOne(mCtx, bson.M{
 			"_id": notif.Extra,
 		})
 		if err := cursor.Decode(&notifTheaterData); err != nil {

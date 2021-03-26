@@ -10,11 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	Connection *mongo.Database
-)
-
-func Configure(c *config.ConfigMap) error {
+func Configure(c *config.ConfigMap) (*mongo.Database, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -29,13 +25,12 @@ func Configure(c *config.ConfigMap) error {
 
 	client, err := mongo.NewClient(opts)
 	if err != nil {
-		return fmt.Errorf("could not create new mongodb client: %v", err)
+		return nil, fmt.Errorf("could not create new mongodb client: %v", err)
 	}
 
 	if err := client.Connect(ctx); err != nil {
-		return fmt.Errorf("could not connect to mongodb client: %v", err)
+		return nil, fmt.Errorf("could not connect to mongodb client: %v", err)
 	}
 
-	Connection = client.Database(c.DB.Name)
-	return nil
+	return client.Database(c.DB.Name), nil
 }

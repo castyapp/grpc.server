@@ -2,9 +2,12 @@ package theater
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -12,24 +15,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
-	"net/http"
-	"time"
 )
 
 func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterRequest) (*proto.Response, error) {
 
 	var (
 		theater           = new(models.Theater)
-		database          = db.Connection
 		friends           = make([]*models.User, 0)
-		collection        = database.Collection("theaters")
-		usersCollection   = database.Collection("users")
-		notifsCollections = database.Collection("notifications")
+		collection        = s.db.Collection("theaters")
+		usersCollection   = s.db.Collection("users")
+		notifsCollections = s.db.Collection("notifications")
 		emptyResponse     = status.Error(codes.Internal, "Could not send invitations, Please tray again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return &proto.Response{
 			Status:  "failed",
@@ -43,7 +42,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 		return nil, emptyResponse
 	}
 
-	if err := collection.FindOne(ctx, bson.M{ "_id": theaterID }).Decode(&theater); err != nil {
+	if err := collection.FindOne(ctx, bson.M{"_id": theaterID}).Decode(&theater); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
@@ -61,9 +60,9 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	if len(fids) == 0 {
 		return &proto.Response{
-			Code:     http.StatusOK,
-			Status:   "success",
-			Message:  "Invitations sent successfully!",
+			Code:    http.StatusOK,
+			Status:  "success",
+			Message: "Invitations sent successfully!",
 		}, nil
 	}
 
@@ -111,8 +110,8 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 	}
 
 	return &proto.Response{
-		Code:     http.StatusOK,
-		Status:   "success",
-		Message:  "Invitations sent successfully!",
+		Code:    http.StatusOK,
+		Status:  "success",
+		Message: "Invitations sent successfully!",
 	}, nil
 }

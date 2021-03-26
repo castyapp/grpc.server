@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/oauth/spotify"
@@ -23,10 +22,10 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 
 	var (
 		connection = new(models.Connection)
-		collection = db.Connection.Collection("connections")
+		collection = s.db.Collection("connections")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -81,10 +80,10 @@ func (s *Service) GetConnection(ctx context.Context, req *proto.ConnectionReques
 
 	var (
 		connection = new(models.Connection)
-		collection = db.Connection.Collection("connections")
+		collection = s.db.Collection("connections")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +111,10 @@ func (s *Service) GetConnections(ctx context.Context, req *proto.AuthenticateReq
 
 	var (
 		connections = make([]*proto.Connection, 0)
-		collection  = db.Connection.Collection("connections")
+		collection  = s.db.Collection("connections")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.db, req)
 	if err != nil {
 		return nil, err
 	}

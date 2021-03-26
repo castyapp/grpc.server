@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -19,11 +20,13 @@ import (
 	"github.com/castyapp/grpc.server/services/user"
 	"github.com/castyapp/grpc.server/storage"
 	"github.com/getsentry/sentry-go"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 var (
+	database  *mongo.Database
 	configMap *config.ConfigMap
 	server    *grpc.Server
 	err       error
@@ -73,7 +76,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if err := db.Configure(configMap); err != nil {
+	if database, err = db.Configure(configMap); err != nil {
 		err := fmt.Errorf("could not configure mongodb client: %v", err)
 		sentry.CaptureException(err)
 		log.Fatal(err)
@@ -101,10 +104,14 @@ func main() {
 		log.Fatal(fmt.Errorf("could not create tcp listener: %v", err))
 	}
 
-	proto.RegisterAuthServiceServer(server, new(auth.Service))
-	proto.RegisterUserServiceServer(server, new(user.Service))
-	proto.RegisterTheaterServiceServer(server, new(theater.Service))
-	proto.RegisterMessagesServiceServer(server, new(message.Service))
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "db", database)
+	ctx = context.WithValue(ctx, "cm", configMap)
+
+	proto.RegisterAuthServiceServer(server, auth.NewService(ctx))
+	proto.RegisterUserServiceServer(server, user.NewService(ctx))
+	proto.RegisterTheaterServiceServer(server, theater.NewService(ctx))
+	proto.RegisterMessagesServiceServer(server, message.NewService(ctx))
 
 	reflection.Register(server)
 

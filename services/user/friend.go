@@ -2,8 +2,9 @@ package user
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -11,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
 )
 
 func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*proto.FriendResponse, error) {
@@ -19,20 +19,20 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 	var (
 		dbFriend           = new(models.Friend)
 		dbFriendUserObject = new(models.User)
-		userCollection     = db.Connection.Collection("users")
-		friendsCollection  = db.Connection.Collection("friends")
+		userCollection     = s.db.Collection("users")
+		friendsCollection  = s.db.Collection("friends")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
 
-	findFriendFilter := bson.M{ "username": req.FriendId }
+	findFriendFilter := bson.M{"username": req.FriendId}
 
 	friendObjectId, err := primitive.ObjectIDFromHex(req.FriendId)
 	if err == nil {
-		findFriendFilter = bson.M{ "_id": friendObjectId }
+		findFriendFilter = bson.M{"_id": friendObjectId}
 	}
 
 	if err := userCollection.FindOne(ctx, findFriendFilter).Decode(dbFriendUserObject); err != nil {
@@ -44,10 +44,10 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 		"$or": []interface{}{
 			bson.M{
 				"friend_id": user.ID,
-				"user_id": dbFriendUserObject.ID,
+				"user_id":   dbFriendUserObject.ID,
 			},
 			bson.M{
-				"user_id": user.ID,
+				"user_id":   user.ID,
 				"friend_id": dbFriendUserObject.ID,
 			},
 		},
@@ -58,23 +58,22 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 	}
 
 	return &proto.FriendResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  helpers.NewProtoUser(dbFriendUserObject),
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: helpers.NewProtoUser(dbFriendUserObject),
 	}, nil
 }
 
 func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Friend, error) {
 
 	var (
-		database   = db.Connection
-		dbFriend   = new(models.Friend)
-		friendsCollection = database.Collection("friends")
-		failedResponse = &proto.Friend{}
-		failedErr      = status.Error(codes.Internal, "Could not et friend request!")
+		dbFriend          = new(models.Friend)
+		friendsCollection = s.db.Collection("friends")
+		failedResponse    = &proto.Friend{}
+		failedErr         = status.Error(codes.Internal, "Could not et friend request!")
 	)
 
-	if _, err := auth.Authenticate(req.AuthRequest); err != nil {
+	if _, err := auth.Authenticate(s.db, req.AuthRequest); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +82,7 @@ func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest
 		return failedResponse, failedErr
 	}
 
-	if err := friendsCollection.FindOne(ctx, bson.M{ "_id": requestObjectId }).Decode(dbFriend); err != nil {
+	if err := friendsCollection.FindOne(ctx, bson.M{"_id": requestObjectId}).Decode(dbFriend); err != nil {
 		return failedResponse, status.Error(codes.NotFound, "Could not find friend request!")
 	}
 

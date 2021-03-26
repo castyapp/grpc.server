@@ -9,7 +9,6 @@ import (
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services"
@@ -29,11 +28,10 @@ import (
 func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterMediaSourcesResponse, error) {
 
 	var (
-		database   = db.Connection
-		collection = database.Collection("theaters")
+		collection = s.db.Collection("theaters")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "Unauthorized!")
 	}
@@ -54,7 +52,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 
 	mediaSource := new(models.MediaSource)
 
-	decoder := database.Collection("media_sources").FindOne(ctx, bson.M{"_id": mediaSourceId, "user_id": user.ID})
+	decoder := s.db.Collection("media_sources").FindOne(ctx, bson.M{"_id": mediaSourceId, "user_id": user.ID})
 	if err := decoder.Decode(mediaSource); err != nil {
 		return nil, err
 	}
@@ -107,13 +105,12 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 
 	var (
 		validationErrors   []*any.Any
-		database           = db.Connection
-		collection         = database.Collection("media_sources")
-		theatersCollection = database.Collection("theaters")
+		collection         = s.db.Collection("media_sources")
+		theatersCollection = s.db.Collection("theaters")
 		failedResponse     = status.Error(codes.Internal, "Could not add a new media source. Please try agian later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "Unauthorized!")
 	}
@@ -123,7 +120,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		findTheater = bson.M{"user_id": user.ID}
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
+	if err := s.db.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
@@ -216,11 +213,10 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 func (s *Service) GetMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterMediaSourcesResponse, error) {
 
 	var (
-		database     = db.Connection
 		mediaSources = make([]*proto.MediaSource, 0)
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return &proto.TheaterMediaSourcesResponse{
 			Status:  "failed",
@@ -242,7 +238,7 @@ func (s *Service) GetMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		}
 	)
 
-	if err := database.Collection("media_sources").FindOne(ctx, filter).Decode(mediaSource); err != nil {
+	if err := s.db.Collection("media_sources").FindOne(ctx, filter).Decode(mediaSource); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 
@@ -259,11 +255,10 @@ func (s *Service) GetMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 func (s *Service) GetMediaSources(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterMediaSourcesResponse, error) {
 
 	var (
-		database     = db.Connection
 		mediaSources = make([]*proto.MediaSource, 0)
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return &proto.TheaterMediaSourcesResponse{
 			Status:  "failed",
@@ -272,7 +267,7 @@ func (s *Service) GetMediaSources(ctx context.Context, req *proto.MediaSourceAut
 		}, nil
 	}
 
-	cursor, err := database.Collection("media_sources").Find(ctx, bson.M{"user_id": user.ID})
+	cursor, err := s.db.Collection("media_sources").Find(ctx, bson.M{"user_id": user.ID})
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
@@ -295,9 +290,9 @@ func (s *Service) GetMediaSources(ctx context.Context, req *proto.MediaSourceAut
 
 func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceRemoveRequest) (*proto.Response, error) {
 
-	collection := db.Connection.Collection("media_sources")
+	collection := s.db.Collection("media_sources")
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return &proto.Response{
 			Status:  "failed",
@@ -316,7 +311,7 @@ func (s *Service) RemoveMediaSource(ctx context.Context, req *proto.MediaSourceR
 		findTheater = bson.M{"user_id": user.ID}
 	)
 
-	if err := db.Connection.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
+	if err := s.db.Collection("theaters").FindOne(ctx, findTheater).Decode(theater); err != nil {
 		return nil, status.Error(codes.Internal, "Could not find theater!")
 	}
 

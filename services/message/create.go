@@ -8,7 +8,6 @@ import (
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -22,12 +21,12 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) 
 
 	var (
 		reciever        = new(models.User)
-		collection      = db.Connection.Collection("messages")
-		usersCollection = db.Connection.Collection("users")
+		collection      = s.db.Collection("messages")
+		usersCollection = s.db.Collection("users")
 		failedResponse  = status.Error(codes.Internal, "Could not create message, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.db, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -2,25 +2,25 @@ package user
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/services"
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"time"
 )
 
 func (s *Service) GenerateRecoveryCodes(ctx context.Context, req *proto.AuthenticateRequest) (*proto.RecoveryCodesResponse, error) {
 
 	var (
-		codesColl      = db.Connection.Collection("users")
+		codesColl      = s.db.Collection("users")
 		failedResponse = status.Error(codes.Internal, "Could not generate recovery codes, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.db, req)
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +47,9 @@ func (s *Service) GenerateRecoveryCodes(ctx context.Context, req *proto.Authenti
 	}
 
 	return &proto.RecoveryCodesResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  protoRecCodes,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: protoRecCodes,
 	}, nil
 
 }
