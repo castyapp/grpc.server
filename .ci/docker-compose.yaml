@@ -1,7 +1,7 @@
 services:
 
   test:
-    image: golang:1.15-alpine
+    image: golang:1.15
     container_name: casty.test
     command: "go test -v ./tests -race"
     working_dir: /work

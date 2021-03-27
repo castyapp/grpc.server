@@ -18,5 +18,8 @@ jobs:
     - name: Build docker images
       run: docker-compose build
 
+    - name: Run redis and mongodb containers
+      run: docker-compose up -d redis db
+
     - name: Run tests
       run: docker-compose run test
