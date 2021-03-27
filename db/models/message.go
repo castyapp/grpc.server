@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Message struct {
@@ -23,13 +23,13 @@ type Message struct {
 	DeletedAt  time.Time           `bson:"deleted_at" json:"deleted_at"`
 }
 
-func (m *Message) ToProto() (*proto.Message, error) {
+func (m *Message) ToProto(db *mongo.Database) (*proto.Message, error) {
 
 	var (
 		ctx        = context.Background()
 		err        error
 		sender     = new(User)
-		collection = db.Connection.Collection("users")
+		collection = db.Collection("users")
 	)
 
 	if err := collection.FindOne(ctx, bson.M{"_id": m.SenderId}).Decode(sender); err != nil {

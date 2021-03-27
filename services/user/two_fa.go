@@ -2,25 +2,32 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/services"
-	"github.com/CastyLab/grpc.server/services/auth"
-	"go.mongodb.org/mongo-driver/bson"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
+
+	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/grpc.server/services"
+	"github.com/castyapp/grpc.server/services/auth"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) GenerateRecoveryCodes(ctx context.Context, req *proto.AuthenticateRequest) (*proto.RecoveryCodesResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		codesColl      = db.Connection.Collection("users")
+		db             = dbConn.(*mongo.Database)
+		codesColl      = db.Collection("users")
 		failedResponse = status.Error(codes.Internal, "Could not generate recovery codes, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
@@ -47,19 +54,21 @@ func (s *Service) GenerateRecoveryCodes(ctx context.Context, req *proto.Authenti
 	}
 
 	return &proto.RecoveryCodesResponse{
-		Status:  "success",
-		Code:    http.StatusOK,
-		Result:  protoRecCodes,
+		Status: "success",
+		Code:   http.StatusOK,
+		Result: protoRecCodes,
 	}, nil
 
 }
 
 func (s *Service) EnableTwoFactorAuth(ctx context.Context, req *proto.TwoFactorAuthRequest) (*proto.Response, error) {
 
+	// TODO: Enable EnableTwoFactorAuth
 	return nil, nil
 }
 
 func (s *Service) DisableTwoFactorAuth(ctx context.Context, req *proto.TwoFactorAuthRequest) (*proto.Response, error) {
 
+	// TODO: Enable DisableTwoFactorAuth
 	return nil, nil
 }

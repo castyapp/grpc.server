@@ -1,97 +1,102 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/config"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/jwt"
-	"github.com/CastyLab/grpc.server/oauth"
-	"github.com/CastyLab/grpc.server/redis"
-	"github.com/CastyLab/grpc.server/services/auth"
-	"github.com/CastyLab/grpc.server/services/message"
-	"github.com/CastyLab/grpc.server/services/theater"
-	"github.com/CastyLab/grpc.server/services/user"
-	"github.com/CastyLab/grpc.server/storage"
+	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/core"
+	"github.com/castyapp/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/oauth"
+	"github.com/castyapp/grpc.server/providers"
+	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/services/message"
+	"github.com/castyapp/grpc.server/services/theater"
+	"github.com/castyapp/grpc.server/services/user"
+	"github.com/castyapp/grpc.server/storage"
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 var (
-	server *grpc.Server
-	port   *int
-	host   *string
+	ctx  *core.Context
+	err  error
+	port *int
+	host *string
 )
 
 func init() {
 
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
-	server = grpc.NewServer()
-	port = flag.Int("port", 55283, "gRPC server port")
-	host = flag.String("host", "0.0.0.0", "gRPC server host")
-	configFileName := flag.String("config-file", "config.yml", "config.yaml file")
+	configFileName := flag.String("config-file", "config.hcl", "config.hcl file")
+	host = flag.String("host", "0.0.0.0", "grpc server host listener")
+	port = flag.Int("port", 55283, "grpc server port listener")
 
 	flag.Parse()
 	log.Printf("Loading ConfigMap from file: [%s]", *configFileName)
 
-	if err := config.Load(*configFileName); err != nil {
-		log.Fatal(fmt.Errorf("could not load config: %v", err))
-	}
+	ctx = core.NewContext(context.Background())
+	ctx.Set("config.filepath", *configFileName)
 
-	if err := sentry.Init(sentry.ClientOptions{Dsn: config.Map.Secrets.SentryDsn}); err != nil {
-		log.Fatal(fmt.Errorf("could not initilize sentry: %v", err))
-	}
+	ctx.With(
 
-	if err := redis.Configure(); err != nil {
-		log.Fatal(fmt.Errorf("could not configure redis : %v", err))
-	}
+		// Registering configmap provider
+		&providers.ConfigProvider{},
 
-	if err := jwt.Load(); err != nil {
-		err := fmt.Errorf("could not load jwt configuration: %v", err)
-		sentry.CaptureException(err)
-		log.Fatal(err)
-	}
+		// Init sentry loggin if its enabled
+		&providers.SentryProvider{},
 
-	if err := oauth.ConfigureOAUTHClients(); err != nil {
-		err := fmt.Errorf("could not load oauth clients configurations: %v", err)
-		sentry.CaptureException(err)
-		log.Fatal(err)
-	}
+		// config database (mongodb)
+		&providers.DatabaseProvider{},
 
-	if err := storage.Configure(); err != nil {
-		err := fmt.Errorf("could not configure s3 bucket storage client: %v", err)
-		sentry.CaptureException(err)
-		log.Fatal(err)
-	}
+		// config redis connection
+		&providers.RedisProvider{},
 
-	if err := db.Configure(); err != nil {
-		err := fmt.Errorf("could not configure mongodb client: %v", err)
-		sentry.CaptureException(err)
-		log.Fatal(err)
-	}
+		// configure jwt
+		&providers.LambdaProvider{
+			Registeration: func(ctx *core.Context) error {
+				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				if err := jwt.Load(cm); err != nil {
+					return fmt.Errorf("could not load jwt configuration: %v", err)
+				}
+				return nil
+			},
+		},
+
+		// configure oauth clients
+		&providers.LambdaProvider{
+			Registeration: func(ctx *core.Context) error {
+				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				if err := oauth.ConfigureOAUTHClients(cm); err != nil {
+					return fmt.Errorf("could not load oauth clients configurations: %v", err)
+				}
+				return nil
+			},
+		},
+
+		// configure s3 bucket (minio) storage
+		&providers.LambdaProvider{
+			Registeration: func(ctx *core.Context) error {
+				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				if err := storage.Configure(cm); err != nil {
+					return fmt.Errorf("could not configure s3 bucket storage client: %v", err)
+				}
+				return nil
+			},
+		},
+	)
 
 }
 
 func main() {
 
-	defer func() {
-
-		// Since sentry emits events in the background we need to make sure
-		// they are sent before we shut down
-		sentry.Flush(time.Second * 5)
-
-		if err := redis.Close(); err != nil {
-			log.Println(fmt.Errorf("could not close redis connection: %v", err))
-		}
-
-	}()
+	defer ctx.Close()
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
@@ -99,10 +104,11 @@ func main() {
 		log.Fatal(fmt.Errorf("could not create tcp listener: %v", err))
 	}
 
-	proto.RegisterAuthServiceServer(server, new(auth.Service))
-	proto.RegisterUserServiceServer(server, new(user.Service))
-	proto.RegisterTheaterServiceServer(server, new(theater.Service))
-	proto.RegisterMessagesServiceServer(server, new(message.Service))
+	server := grpc.NewServer()
+	proto.RegisterAuthServiceServer(server, auth.NewService(ctx))
+	proto.RegisterUserServiceServer(server, user.NewService(ctx))
+	proto.RegisterTheaterServiceServer(server, theater.NewService(ctx))
+	proto.RegisterMessagesServiceServer(server, message.NewService(ctx))
 
 	reflection.Register(server)
 

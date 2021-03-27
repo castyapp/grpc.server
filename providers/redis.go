@@ -1,4 +1,4 @@
-package redis
+package providers
 
 import (
 	"context"
@@ -10,15 +10,14 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func Provider(ctx *core.Context) error {
+type RedisProvider struct {
+	client *redis.Client
+}
 
-	var (
-		client *redis.Client
-		cm     = ctx.MustGet("config.map").(*config.ConfigMap)
-	)
-
+func (p *RedisProvider) Register(ctx *core.Context) error {
+	cm := ctx.MustGet("config.map").(*config.ConfigMap)
 	if cm.Redis.Cluster {
-		client = redis.NewFailoverClient(&redis.FailoverOptions{
+		p.client = redis.NewFailoverClient(&redis.FailoverOptions{
 			SentinelAddrs:    cm.Redis.Sentinels,
 			SentinelPassword: cm.Redis.SentinelPass,
 			Password:         cm.Redis.Pass,
@@ -26,13 +25,13 @@ func Provider(ctx *core.Context) error {
 			DB:               0,
 		})
 	} else {
-		client = redis.NewClient(&redis.Options{
+		p.client = redis.NewClient(&redis.Options{
 			Addr:     cm.Redis.Addr,
 			Password: cm.Redis.Pass,
 		})
 	}
 
-	cmd := client.Ping(context.Background())
+	cmd := p.client.Ping(context.Background())
 	if res := cmd.Val(); res != "PONG" {
 		if cm.Redis.Cluster {
 			log.Println(fmt.Sprintf("Redis: SentinelAddrs [%s]", cm.Redis.Sentinels))
@@ -42,5 +41,9 @@ func Provider(ctx *core.Context) error {
 		return fmt.Errorf("could not ping the redis server: %v", cmd.Err())
 	}
 
-	return ctx.Set("redis.conn", client)
+	return ctx.Set("redis.conn", p.client)
+}
+
+func (p *RedisProvider) Close(ctx *core.Context) error {
+	return p.client.Close()
 }

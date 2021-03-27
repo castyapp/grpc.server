@@ -8,25 +8,31 @@ import (
 
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.AuthenticateRequest) (*proto.PendingFriendRequests, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		friendRequests    = make([]*proto.FriendRequest, 0)
-		userCollection    = db.Connection.Collection("users")
-		friendsCollection = db.Connection.Collection("friends")
+		userCollection    = db.Collection("users")
+		friendsCollection = db.Collection("friends")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
@@ -70,15 +76,21 @@ func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.Authe
 
 func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		friendRequest     = new(models.Friend)
-		usersCollection   = db.Connection.Collection("users")
-		friendsCollection = db.Connection.Collection("friends")
-		notifsCollection  = db.Connection.Collection("notifications")
+		usersCollection   = db.Collection("users")
+		friendsCollection = db.Collection("friends")
+		notifsCollection  = db.Collection("notifications")
 		failedResponse    = status.Error(codes.Internal, "Could not accept friend request, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -151,14 +163,14 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 		// sending friend to current user
 		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_FRIEND, protoFriend); err == nil {
-			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+			if err := helpers.SendEventToUser(s.Context, buffer.Bytes(), protoUser); err != nil {
 				log.Println(err)
 			}
 		}
 
 		// sending current user to friend
 		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_FRIEND, protoUser); err == nil {
-			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoFriend); err != nil {
+			if err := helpers.SendEventToUser(s.Context, buffer.Bytes(), protoFriend); err != nil {
 				log.Println(err)
 			}
 		}
@@ -175,16 +187,21 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 
 func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		database                = db.Connection
+		db                      = dbConn.(*mongo.Database)
 		friend                  = new(models.User)
-		userCollection          = database.Collection("users")
-		friendsCollection       = database.Collection("friends")
-		notificationsCollection = database.Collection("notifications")
+		userCollection          = db.Collection("users")
+		friendsCollection       = db.Collection("friends")
+		notificationsCollection = db.Collection("notifications")
 		failedResponse          = status.Error(codes.Internal, "Could not create friend request, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +270,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 	// send event to friend clients
 	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_NOTIFICATION, &proto.NotificationMsgEvent{})
 	if err == nil {
-		if err := helpers.SendEventToUser(ctx, buffer.Bytes(), &proto.User{Id: friend.ID.Hex()}); err != nil {
+		if err := helpers.SendEventToUser(s.Context, buffer.Bytes(), &proto.User{Id: friend.ID.Hex()}); err != nil {
 			log.Println(err)
 		}
 	}

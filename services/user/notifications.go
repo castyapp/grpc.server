@@ -3,19 +3,20 @@ package user
 import (
 	"context"
 	"encoding/json"
-	"github.com/CastyLab/grpc.server/helpers"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
 
+	"github.com/castyapp/grpc.server/helpers"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -26,12 +27,18 @@ type NotificationData struct {
 
 func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.NotificationResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		collection     = db.Connection.Collection("notifications")
+		db             = dbConn.(*mongo.Database)
+		collection     = db.Collection("notifications")
 		failedResponse = status.Error(codes.InvalidArgument, "Could not create notification, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +92,13 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		Message: "Notification created successfully!",
 		Result: []*proto.Notification{
 			{
-				Id:                   insertedID.Hex(),
-				Type:                 req.Notification.Type,
-				Data:                 notification["extra"].(string),
-				Read:                 false,
-				FromUserId:           user.ID.Hex(),
-				ToUserId:             friendObjectId.Hex(),
-				CreatedAt:            createdAt,
+				Id:         insertedID.Hex(),
+				Type:       req.Notification.Type,
+				Data:       notification["extra"].(string),
+				Read:       false,
+				FromUserId: user.ID.Hex(),
+				ToUserId:   friendObjectId.Hex(),
+				CreatedAt:  createdAt,
 			},
 		},
 	}, nil
@@ -99,13 +106,19 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 
 func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db               = dbConn.(*mongo.Database)
 		notifications    = make([]*proto.Notification, 0)
-		notifsCollection = db.Connection.Collection("notifications")
+		notifsCollection = db.Collection("notifications")
 		failedResponse   = status.Error(codes.Internal, "Could not get notifications, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +140,7 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		if err := cursor.Decode(notification); err != nil {
 			continue
 		}
-		messageNotification, err := helpers.NewNotificationProto(notification)
+		messageNotification, err := helpers.NewNotificationProto(db, notification)
 		if err != nil {
 			continue
 		}
@@ -147,12 +160,18 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 
 func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		notifsCollection = db.Connection.Collection("notifications")
+		db               = dbConn.(*mongo.Database)
+		notifsCollection = db.Collection("notifications")
 		failedResponse   = status.Error(codes.Internal, "Could not update notifications, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +179,7 @@ func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.Authentic
 	var (
 		filter = bson.M{
 			"to_user_id": user.ID,
-			"read": false,
+			"read":       false,
 		}
 		update = bson.M{
 			"$set": bson.M{

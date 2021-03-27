@@ -2,27 +2,34 @@ package user
 
 import (
 	"context"
-	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.proto/protocol"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/services/auth"
-	"go.mongodb.org/mongo-driver/bson"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log"
 	"net/http"
+
+	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/CastyLab/grpc.proto/protocol"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/services/auth"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.GetUserResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		collection     = db.Connection.Collection("users")
+		db             = dbConn.(*mongo.Database)
+		collection     = db.Collection("users")
 		failedResponse = status.Error(codes.Internal, "Could not update the user, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -64,14 +71,14 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 		// update self user with new activity to other clients
 		buffer, err := protocol.NewMsgProtobuf(proto.EMSG_SELF_USER_UPDATED, protoUser)
 		if err == nil {
-			if err := helpers.SendEventToUser(ctx, buffer.Bytes(), protoUser); err != nil {
+			if err := helpers.SendEventToUser(s.Context, buffer.Bytes(), protoUser); err != nil {
 				log.Println(err)
 			}
 		}
 
 		// update friends with new activity of user
 		if buffer, err := protocol.NewMsgProtobuf(proto.EMSG_USER_UPDATED, protoUser); err == nil {
-			if err := helpers.SendEventToFriends(ctx, buffer.Bytes(), user); err != nil {
+			if err := helpers.SendEventToFriends(s.Context, buffer.Bytes(), user); err != nil {
 				return nil, err
 			}
 		}
@@ -89,12 +96,18 @@ func (s *Service) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) 
 
 func (s *Service) UpdatePassword(ctx context.Context, req *proto.UpdatePasswordRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		collection     = db.Connection.Collection("users")
+		db             = dbConn.(*mongo.Database)
+		collection     = db.Collection("users")
 		failedResponse = status.Error(codes.Internal, "Could not update the user's password, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +121,8 @@ func (s *Service) UpdatePassword(ctx context.Context, req *proto.UpdatePasswordR
 	}
 
 	var (
-		filter    = bson.M{"_id": user.ID}
-		update    = bson.M{
+		filter = bson.M{"_id": user.ID}
+		update = bson.M{
 			"$set": bson.M{
 				"password": models.HashPassword(req.VerifyNewPassword),
 			},

@@ -1,4 +1,4 @@
-package db
+package providers
 
 import (
 	"context"
@@ -11,8 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Provider(ctx *core.Context) error {
+type DatabaseProvider struct {
+	client *mongo.Client
+}
 
+func (p *DatabaseProvider) Register(ctx *core.Context) error {
 	mCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
@@ -30,11 +33,16 @@ func Provider(ctx *core.Context) error {
 	if err != nil {
 		return fmt.Errorf("could not create new mongodb client: %v", err)
 	}
+	p.client = client
 
 	if err := client.Connect(mCtx); err != nil {
 		return fmt.Errorf("could not connect to mongodb client: %v", err)
 	}
 
-	connection := client.Database(cm.DB.Name)
-	return ctx.Set("db.mongo", connection)
+	conn := client.Database(cm.DB.Name)
+	return ctx.Set("db.mongo", conn)
+}
+
+func (p *DatabaseProvider) Close(ctx *core.Context) error {
+	return p.client.Disconnect(ctx)
 }

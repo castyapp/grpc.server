@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/CastyLab/grpc.server/storage"
+	"github.com/castyapp/grpc.server/storage"
 	"github.com/minio/minio-go"
 )
 
@@ -27,8 +27,7 @@ func SaveAvatarFromUrl(url string) (string, error) {
 		return avatarName, err
 	}
 	defer resp.Body.Close()
-	_, err = storage.Client.PutObject("avatars", fmt.Sprintf("%s.png", avatarName), resp.Body, -1, minio.PutObjectOptions{})
-	if err != nil {
+	if _, err = storage.Client.PutObject("avatars", fmt.Sprintf("%s.png", avatarName), resp.Body, -1, minio.PutObjectOptions{}); err != nil {
 		return "", err
 	}
 	return avatarName, nil
@@ -48,7 +47,7 @@ func RandomNumber(length int) string {
 }
 
 func RandomUserName() string {
-	return "u" + RandomNumber(10)
+	return fmt.Sprintf("u%s", RandomNumber(10))
 }
 
 func GenerateHash() string {

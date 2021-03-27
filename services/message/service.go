@@ -6,29 +6,36 @@ import (
 	"net/http"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
-	"github.com/CastyLab/grpc.server/helpers"
-	"github.com/CastyLab/grpc.server/services/auth"
+	"github.com/castyapp/grpc.server/core"
+	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Service struct {
+	*core.Context
 	proto.UnimplementedMessagesServiceServer
+}
+
+func NewService(ctx *core.Context) *Service {
+	return &Service{Context: ctx}
 }
 
 func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesRequest) (*proto.GetMessagesResponse, error) {
 
 	var (
+		db              = s.MustGet("db.mongo").(*mongo.Database)
 		reciever        = new(models.User)
-		collection      = db.Connection.Collection("messages")
-		usersCollection = db.Connection.Collection("users")
+		collection      = db.Collection("messages")
+		usersCollection = db.Collection("users")
 		failedResponse  = status.Error(codes.Internal, "Could not get messages, Please try again later!")
 	)
 
-	u, err := auth.Authenticate(req.AuthRequest)
+	u, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +72,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		if err := cursor.Decode(message); err != nil {
 			continue
 		}
-		protoMessage, err := helpers.NewProtoMessage(ctx, message)
+		protoMessage, err := helpers.NewProtoMessage(db, ctx, message)
 		if err != nil {
 			continue
 		}

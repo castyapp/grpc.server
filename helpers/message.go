@@ -4,18 +4,18 @@ import (
 	"context"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/CastyLab/grpc.server/db"
-	"github.com/CastyLab/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/db/models"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewProtoMessage(ctx context.Context, message *models.Message) (*proto.Message, error) {
+func NewProtoMessage(db *mongo.Database, ctx context.Context, message *models.Message) (*proto.Message, error) {
 
 	var (
 		err        error
 		sender     = new(models.User)
-		collection = db.Connection.Collection("users")
+		collection = db.Collection("users")
 	)
 
 	if err := collection.FindOne(ctx, bson.M{"_id": message.SenderId}).Decode(sender); err != nil {
