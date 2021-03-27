@@ -15,9 +15,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Build docker images
-      run: docker-compose build
-
     - name: Run redis and mongodb containers
       run: docker-compose up -d redis db
 
