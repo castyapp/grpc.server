@@ -15,9 +15,15 @@ var (
 	ErrKeyNodFound = errors.New("key not found!")
 )
 
+type Provider interface {
+	Register(ctx *Context) error
+	Close(ctx *Context) error
+}
+
 type Context struct {
 	ctx          context.Context
 	items        map[string]interface{}
+	providers    []Provider
 	sync.RWMutex // Read Write mutex, guards access to internal map.
 }
 
@@ -25,14 +31,24 @@ func NewContext(ctx context.Context) *Context {
 	return &Context{ctx: ctx, items: make(map[string]interface{}, 0)}
 }
 
-func (c *Context) With(handlers ...func(ctx *Context) error) *Context {
+func (c *Context) With(handlers ...Provider) *Context {
 	for _, handler := range handlers {
-		if err := handler(c); err != nil {
+		if err := handler.Register(c); err != nil {
 			fmt.Printf("Could not register provider [%s] cause [%v]\n", reflect.ValueOf(handler).Kind().String(), err)
 			os.Exit(1)
 		}
+		c.providers = append(c.providers, handler)
 	}
 	return c
+}
+
+func (c *Context) Close() error {
+	for _, p := range c.providers {
+		if err := p.Close(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *Context) MustGet(key string) (value interface{}) {
