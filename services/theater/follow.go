@@ -11,18 +11,25 @@ import (
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.AuthenticateRequest) (*proto.FollowedTheatersResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		theaters          = make([]*proto.Theater, 0)
-		followsCollection = s.db.Collection("follows")
+		followsCollection = db.Collection("follows")
 	)
 
-	user, err := auth.Authenticate(s.db, req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +45,11 @@ func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.Authentica
 			continue
 		}
 		theater := new(models.Theater)
-		err := s.db.Collection("theaters").FindOne(ctx, bson.M{"_id": follow.TheaterId}).Decode(theater)
+		err := db.Collection("theaters").FindOne(ctx, bson.M{"_id": follow.TheaterId}).Decode(theater)
 		if err != nil {
 			continue
 		}
-		protoTheater, err := helpers.NewTheaterProto(s.db, ctx, theater)
+		protoTheater, err := helpers.NewTheaterProto(db, ctx, theater)
 		if err != nil {
 			continue
 		}
@@ -58,13 +65,19 @@ func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.Authentica
 
 func (s *Service) Follow(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		theater           = new(models.Theater)
-		followsCollection = s.db.Collection("follows")
-		theaterCollection = s.db.Collection("theaters")
+		followsCollection = db.Collection("follows")
+		theaterCollection = db.Collection("theaters")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -115,12 +128,18 @@ func (s *Service) Follow(ctx context.Context, req *proto.TheaterAuthRequest) (*p
 
 func (s *Service) Unfollow(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		follow            = new(models.Follow)
-		followsCollection = s.db.Collection("follows")
+		followsCollection = db.Collection("follows")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}

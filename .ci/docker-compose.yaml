@@ -1,0 +1,38 @@
+services:
+
+  test:
+    image: golang:1.15
+    container_name: casty.test
+    command: "go test -v ./tests -race"
+    working_dir: /work
+    volumes:
+      - ../:/work
+    networks:
+      - casty
+
+  redis:
+    image: redis:alpine
+    container_name: casty.redis
+    command: redis-server --requirepass 'super-secure-redis-password'
+    ports:
+      - 6379
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    networks:
+      - casty
+
+  db:
+    image: mongo:latest
+    container_name: casty.db
+    ports:
+      - 27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: gotest
+      MONGO_INITDB_ROOT_PASSWORD: "super-secure-mongodb-password"
+      MONGO_INITDB_DATABASE: casty
+    networks:
+      - casty
+
+networks:
+  casty:
+    driver: bridge

@@ -1,13 +1,13 @@
 package helpers
 
 import (
-	"context"
 	"fmt"
 	"log"
 
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/db/models"
-	"github.com/castyapp/grpc.server/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,7 +15,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func GetFriendsFromDatabase(db *mongo.Database, ctx context.Context, user *models.User) ([]*proto.User, error) {
+func GetFriendsFromDatabase(ctx *core.Context, user *models.User) ([]*proto.User, error) {
+
+	db := ctx.MustGet("db.mongo").(*mongo.Database)
+
 	var (
 		friends           = make([]*proto.User, 0)
 		userCollection    = db.Collection("users")
@@ -59,8 +62,8 @@ func GetFriendsFromDatabase(db *mongo.Database, ctx context.Context, user *model
 }
 
 // update friends with new event of user
-func SendEventToFriends(db *mongo.Database, ctx context.Context, event []byte, user *models.User) error {
-	friends, err := GetFriendsFromDatabase(db, ctx, user)
+func SendEventToFriends(ctx *core.Context, event []byte, user *models.User) error {
+	friends, err := GetFriendsFromDatabase(ctx, user)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not get friends!")
 	}
@@ -68,22 +71,33 @@ func SendEventToFriends(db *mongo.Database, ctx context.Context, event []byte, u
 	return nil
 }
 
-func SendEventToUser(ctx context.Context, event []byte, user *proto.User) (err error) {
-	_, err = redis.Client.Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event).Result()
+func SendEventToUser(ctx *core.Context, event []byte, user *proto.User) (err error) {
+	redisConn, err := ctx.Get("redis.conn")
+	if err != nil {
+		return err
+	}
+	_, err = redisConn.(*redis.Client).Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event).Result()
 	return
 }
 
-func SendEventToUsers(ctx context.Context, event []byte, users []*proto.User) {
-	for _, user := range users {
-		_, err := redis.Client.Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event).Result()
-		if err != nil {
-			log.Println(err)
+func SendEventToUsers(ctx *core.Context, event []byte, users []*proto.User) {
+	redisConn, err := ctx.Get("redis.conn")
+	if err == nil {
+		for _, user := range users {
+			_, err := redisConn.(*redis.Client).Publish(ctx, fmt.Sprintf("user:events:%s", user.Id), event).Result()
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
 
-func SendEventToTheaterMembers(ctx context.Context, event []byte, theater *models.Theater) (err error) {
-	_, err = redis.Client.Publish(ctx, fmt.Sprintf("theater:events:%s", theater.ID.Hex()), event).Result()
+func SendEventToTheaterMembers(ctx *core.Context, event []byte, theater *models.Theater) (err error) {
+	redisConn, err := ctx.Get("redis.conn")
+	if err != nil {
+		return err
+	}
+	_, err = redisConn.(*redis.Client).Publish(ctx, fmt.Sprintf("theater:events:%s", theater.ID.Hex()), event).Result()
 	return
 }
 

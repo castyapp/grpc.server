@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 
+	"github.com/castyapp/grpc.server/core"
 	"github.com/hashicorp/hcl"
 )
 
@@ -11,7 +13,6 @@ type ConfigMap struct {
 	Env       string          `hcl:"env"`
 	Metrics   bool            `hcl:"metrics"`
 	Timezone  string          `hcl:"timezone"`
-	Listener  GrpcListener    `hcl:"listener,block"`
 	Redis     RedisConfig     `hcl:"redis,block"`
 	DB        DBConfig        `hcl:"db,block"`
 	Oauth     OauthConfig     `hcl:"oauth,block"`
@@ -19,11 +20,6 @@ type ConfigMap struct {
 	Sentry    SentryConfig    `hcl:"sentry,block"`
 	JWT       JWTConfig       `hcl:"jwt,block"`
 	Recaptcha RecaptchaConfig `hcl:"recaptcha,block"`
-}
-
-type GrpcListener struct {
-	Host string `hcl:"host"`
-	Port int    `hcl:"port"`
 }
 
 type RedisConfig struct {
@@ -108,4 +104,14 @@ func LoadFile(filename string) (c *ConfigMap, err error) {
 	}
 
 	return
+}
+
+func Provider(ctx *core.Context) error {
+	configFilePath := ctx.MustGetString("config.filepath")
+	configMap, err := LoadFile(configFilePath)
+	if err != nil {
+		return fmt.Errorf("could not load config: %v", err)
+	}
+	ctx.Set("config.map", configMap)
+	return nil
 }

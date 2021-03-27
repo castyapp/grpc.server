@@ -10,34 +10,24 @@ env = "dev"
 # Timezone
 timezone = "America/California"
 
-# gRPC TCP listener config
-listener {
-  host = "0.0.0.0"
-  port = 8000
-}
-
 # Redis configurations
 redis {
   # if you wish to use redis cluster, set this value to true
   # If cluster is true, sentinels is required
   # If cluster is false, addr is required
-  cluster     = false
-  master_name = "casty"
-  addr        = "127.0.0.1:26379"
-  sentinels   = [
-    "127.0.0.1:26379"
-  ]
-  pass = "super-secure-password"
-  sentinel_pass = "super-secure-sentinels-password"
+  cluster       = false
+  master_name   = "casty"
+  addr          = "casty.redis:6379"
+  pass          = "super-secure-redis-password"
 }
 
 # Database (mongodb) config
 db {
   name = "casty"
-  host = "localhost"
+  host = "casty.db"
   port = 27017
-  user = "service"
-  pass = "super-secure-password"
+  user = "gotest"
+  pass = "super-secure-mongodb-password"
 }
 
 # JWT secrets

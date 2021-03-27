@@ -13,6 +13,7 @@ import (
 	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,13 +21,14 @@ import (
 func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) (*proto.MessageResponse, error) {
 
 	var (
+		db              = s.MustGet("db.mongo").(*mongo.Database)
 		reciever        = new(models.User)
-		collection      = s.db.Collection("messages")
-		usersCollection = s.db.Collection("users")
+		collection      = db.Collection("messages")
+		usersCollection = db.Collection("users")
 		failedResponse  = status.Error(codes.Internal, "Could not create message, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +73,7 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) 
 		CreatedAt: protoMessage.CreatedAt,
 	})
 	if err == nil {
-		helpers.SendEventToUsers(ctx, buffer.Bytes(), []*proto.User{
+		helpers.SendEventToUsers(s.Context, buffer.Bytes(), []*proto.User{
 			protoMessage.Sender,
 			protoMessage.Reciever,
 		})

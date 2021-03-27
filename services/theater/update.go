@@ -12,20 +12,27 @@ import (
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db             = dbConn.(*mongo.Database)
 		theater        = new(models.Theater)
 		updateMap      = bson.M{}
-		collection     = s.db.Collection("theaters")
+		collection     = db.Collection("theaters")
 		failedResponse = status.Error(codes.Internal, "Could not create theater, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "Unauthorized!")
 	}
@@ -56,7 +63,7 @@ func (s *Service) UpdateTheater(ctx context.Context, req *proto.TheaterAuthReque
 		}
 		event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_UPDATED, req.Theater)
 		if err == nil {
-			if err := helpers.SendEventToTheaterMembers(ctx, event.Bytes(), theater); err != nil {
+			if err := helpers.SendEventToTheaterMembers(s.Context, event.Bytes(), theater); err != nil {
 				log.Println(err)
 			}
 		}

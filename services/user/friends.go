@@ -13,12 +13,12 @@ import (
 
 func (s *Service) GetFriends(ctx context.Context, req *proto.AuthenticateRequest) (*proto.FriendsResponse, error) {
 
-	user, err := auth.Authenticate(s.db, req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
 
-	friends, err := helpers.GetFriendsFromDatabase(s.db, ctx, user)
+	friends, err := helpers.GetFriendsFromDatabase(s.Context, user)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Could not get friends!")
 	}

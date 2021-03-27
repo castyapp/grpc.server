@@ -1,0 +1,22 @@
+name: Test
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  test:
+    name: Run test suite
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: .ci/docker-compose.yaml
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Run redis and mongodb containers
+      run: docker-compose up -d redis db
+
+    - name: Run tests
+      run: docker-compose run test

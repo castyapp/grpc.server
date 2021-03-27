@@ -20,12 +20,18 @@ import (
 
 func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionRequest) (*proto.ConnectionsResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db         = dbConn.(*mongo.Database)
 		connection = new(models.Connection)
-		collection = s.db.Collection("connections")
+		collection = db.Collection("connections")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -78,12 +84,18 @@ func (s *Service) UpdateConnection(ctx context.Context, req *proto.ConnectionReq
 
 func (s *Service) GetConnection(ctx context.Context, req *proto.ConnectionRequest) (*proto.ConnectionsResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db         = dbConn.(*mongo.Database)
 		connection = new(models.Connection)
-		collection = s.db.Collection("connections")
+		collection = db.Collection("connections")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +121,18 @@ func (s *Service) GetConnection(ctx context.Context, req *proto.ConnectionReques
 
 func (s *Service) GetConnections(ctx context.Context, req *proto.AuthenticateRequest) (*proto.ConnectionsResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db          = dbConn.(*mongo.Database)
 		connections = make([]*proto.Connection, 0)
-		collection  = s.db.Collection("connections")
+		collection  = db.Collection("connections")
 	)
 
-	user, err := auth.Authenticate(s.db, req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}

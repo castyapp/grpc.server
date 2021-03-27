@@ -23,18 +23,19 @@ import (
 func (s *Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*proto.AuthResponse, error) {
 
 	var (
+		db             = s.MustGet("db.mongo").(*mongo.Database)
 		err            error
 		authenticated  bool
 		token          *oauth2.Token
 		oauthUser      oauth.User
 		user           = new(models.User)
-		collection     = s.db.Collection("users")
-		consCollection = s.db.Collection("connections")
+		collection     = db.Collection("users")
+		consCollection = db.Collection("connections")
 		unauthorized   = status.Error(codes.Unauthenticated, "Unauthorized!")
 	)
 
 	if req.AuthRequest != nil {
-		if user, err = Authenticate(s.db, req.AuthRequest); err != nil {
+		if user, err = Authenticate(s.Context, req.AuthRequest); err != nil {
 			return nil, unauthorized
 		}
 		authenticated = true
@@ -108,7 +109,7 @@ func (s *Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*
 		return nil, err
 	}
 
-	authToken, refreshedToken, err := jwt.CreateNewTokens(s.db, ctx, user.ID.Hex())
+	authToken, refreshedToken, err := jwt.CreateNewTokens(s.Context, user.ID.Hex())
 	if err != nil {
 		return nil, err
 	}

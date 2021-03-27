@@ -3,11 +3,10 @@ package message
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/CastyLab/grpc.proto/proto"
-	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
@@ -18,33 +17,25 @@ import (
 )
 
 type Service struct {
-	c  *config.ConfigMap
-	db *mongo.Database
+	*core.Context
 	proto.UnimplementedMessagesServiceServer
 }
 
-func NewService(ctx context.Context) *Service {
-	database := ctx.Value("db")
-	if database == nil {
-		log.Panicln("db value is required in context!")
-	}
-	configMap := ctx.Value("cm")
-	if configMap == nil {
-		log.Panicln("configMap value is required in context!")
-	}
-	return &Service{db: database.(*mongo.Database), c: configMap.(*config.ConfigMap)}
+func NewService(ctx *core.Context) *Service {
+	return &Service{Context: ctx}
 }
 
 func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesRequest) (*proto.GetMessagesResponse, error) {
 
 	var (
+		db              = s.MustGet("db.mongo").(*mongo.Database)
 		reciever        = new(models.User)
-		collection      = s.db.Collection("messages")
-		usersCollection = s.db.Collection("users")
+		collection      = db.Collection("messages")
+		usersCollection = db.Collection("users")
 		failedResponse  = status.Error(codes.Internal, "Could not get messages, Please try again later!")
 	)
 
-	u, err := auth.Authenticate(s.db, req.AuthRequest)
+	u, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +72,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		if err := cursor.Decode(message); err != nil {
 			continue
 		}
-		protoMessage, err := helpers.NewProtoMessage(s.db, ctx, message)
+		protoMessage, err := helpers.NewProtoMessage(db, ctx, message)
 		if err != nil {
 			continue
 		}
