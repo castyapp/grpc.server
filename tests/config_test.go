@@ -16,12 +16,12 @@ var defaultConfig = &config.ConfigMap{
 	Redis: config.RedisConfig{
 		Cluster:    false,
 		MasterName: "casty",
-		Addr:       "127.0.0.1:6379",
+		Addr:       "casty.redis:6379",
 		Pass:       "super-secure-redis-password",
 	},
 	DB: config.DBConfig{
 		Name: "casty",
-		Host: "127.0.0.1",
+		Host: "casty.db",
 		Port: 27017,
 		User: "gotest",
 		Pass: "super-secure-mongodb-password",

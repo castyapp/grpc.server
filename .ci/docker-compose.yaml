@@ -2,12 +2,13 @@ services:
 
   test:
     image: golang:1.15-alpine
-    command: "make test"
+    container_name: casty.test
+    command: "go test -v ./tests -race"
     working_dir: /work
     volumes:
       - ../:/work
     networks:
-      - casty-test
+      - casty
 
   redis:
     image: redis:alpine
@@ -18,7 +19,7 @@ services:
     environment:
       - REDIS_REPLICATION_MODE=master
     networks:
-      - casty-test
+      - casty
 
   db:
     image: mongo:latest
@@ -30,8 +31,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: "super-secure-mongodb-password"
       MONGO_INITDB_DATABASE: casty
     networks:
-      - casty-test
+      - casty
 
 networks:
-  casty-test:
+  casty:
     driver: bridge

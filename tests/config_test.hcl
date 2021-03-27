@@ -17,17 +17,17 @@ redis {
   # If cluster is false, addr is required
   cluster       = false
   master_name   = "casty"
-  addr          = "127.0.0.1:6379"
-  pass          = "super-secure-mongodb-password"
+  addr          = "casty.redis:6379"
+  pass          = "super-secure-redis-password"
 }
 
 # Database (mongodb) config
 db {
   name = "casty"
-  host = "127.0.0.1"
+  host = "casty.db"
   port = 27017
   user = "gotest"
-  pass = "super-secure-redis-password"
+  pass = "super-secure-mongodb-password"
 }
 
 # JWT secrets
