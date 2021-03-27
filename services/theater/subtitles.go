@@ -12,6 +12,7 @@ import (
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -19,15 +20,21 @@ import (
 // Get all subtitles from theater
 func (s *Service) AddSubtitles(ctx context.Context, req *proto.AddSubtitlesRequest) (*proto.SubtitlesResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                     = dbConn.(*mongo.Database)
 		insertMap              = make([]interface{}, 0)
 		mediaSource            = new(models.MediaSource)
-		mediaSourcesCollection = s.db.Collection("media_sources")
-		subtitlesCollection    = s.db.Collection("subtitles")
+		mediaSourcesCollection = db.Collection("media_sources")
+		subtitlesCollection    = db.Collection("subtitles")
 		failedResponse         = status.Error(codes.Internal, "Could not add subtitles, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -70,21 +77,26 @@ func (s *Service) AddSubtitles(ctx context.Context, req *proto.AddSubtitlesReque
 // Get all subtitles from theater
 func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterSubtitlesResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		err                    error
+		db                     = dbConn.(*mongo.Database)
 		authenticated          = false
 		authUser               = new(models.User)
 		dbTheater              = new(models.Theater)
 		mediaSource            = new(models.MediaSource)
 		subtitles              = make([]*proto.Subtitle, 0)
-		theatersCollection     = s.db.Collection("theaters")
-		mediaSourcesCollection = s.db.Collection("media_sources")
-		collection             = s.db.Collection("subtitles")
+		theatersCollection     = db.Collection("theaters")
+		mediaSourcesCollection = db.Collection("media_sources")
+		collection             = db.Collection("subtitles")
 		failedResponse         = status.Error(codes.Internal, "Could not get subtitles, Please try again later!")
 	)
 
 	if req.AuthRequest != nil {
-		if authUser, err = auth.Authenticate(s.db, req.AuthRequest); err != nil {
+		if authUser, err = auth.Authenticate(s.Context, req.AuthRequest); err != nil {
 			return nil, err
 		}
 		authenticated = true
@@ -144,13 +156,19 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRe
 // Remove subtitle from theater
 func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db             = dbConn.(*mongo.Database)
 		mediaSource    = new(models.Theater)
-		collection     = s.db.Collection("subtitles")
+		collection     = db.Collection("subtitles")
 		failedResponse = status.Error(codes.Internal, "Could not remove subtitle, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +181,7 @@ func (s *Service) RemoveSubtitle(ctx context.Context, req *proto.RemoveSubtitleR
 		}
 	)
 
-	if err := s.db.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
+	if err := db.Collection("media_sources").FindOne(ctx, findFilter).Decode(mediaSource); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/db/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,8 +13,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func NewMemberProto(db *mongo.Database, member *models.TheaterMember) (*proto.User, error) {
+func NewMemberProto(ctx *core.Context, member *models.TheaterMember) (*proto.User, error) {
+
+	dbConn, err := ctx.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db       = dbConn.(*mongo.Database)
 		dbmember = new(models.User)
 		decoder  = db.Collection("users").
 				FindOne(context.Background(), bson.M{"_id": member.UserId})
@@ -24,9 +32,18 @@ func NewMemberProto(db *mongo.Database, member *models.TheaterMember) (*proto.Us
 	return NewProtoUser(dbmember), nil
 }
 
-func GetTheaterMembers(db *mongo.Database, ctx context.Context, theater *models.Theater) ([]*proto.User, error) {
+func GetTheaterMembers(ctx *core.Context, theater *models.Theater) ([]*proto.User, error) {
 
-	members := make([]*proto.User, 0)
+	dbConn, err := ctx.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		db      = dbConn.(*mongo.Database)
+		members = make([]*proto.User, 0)
+	)
+
 	cursor, err := db.Collection("theater_members").Find(ctx, bson.M{"theater_id": theater.ID})
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not get theater members")
@@ -37,7 +54,7 @@ func GetTheaterMembers(db *mongo.Database, ctx context.Context, theater *models.
 		if err := cursor.Decode(member); err != nil {
 			continue
 		}
-		protoMember, err := NewMemberProto(db, member)
+		protoMember, err := NewMemberProto(ctx, member)
 		if err != nil {
 			continue
 		}

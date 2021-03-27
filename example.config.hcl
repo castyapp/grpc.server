@@ -10,12 +10,6 @@ env = "dev"
 # Timezone
 timezone = "America/California"
 
-# gRPC TCP listener config
-listener {
-  host = "0.0.0.0"
-  port = 8000
-}
-
 # Redis configurations
 redis {
   # if you wish to use redis cluster, set this value to true

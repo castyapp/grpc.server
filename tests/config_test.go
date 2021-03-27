@@ -1,54 +1,50 @@
-package config
+package tests
 
 import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/castyapp/grpc.server/config"
 )
 
-var defaultConfig = &ConfigMap{
+var defaultConfig = &config.ConfigMap{
 	Debug:    false,
 	Metrics:  false,
 	Env:      "dev",
 	Timezone: "America/California",
-	Listener: GrpcListener{
-		Host: "0.0.0.0",
-		Port: 8000,
+	Redis: config.RedisConfig{
+		Cluster:    false,
+		MasterName: "casty",
+		Addr:       "127.0.0.1:6379",
+		Pass:       "super-secure-redis-password",
 	},
-	Redis: RedisConfig{
-		Cluster:      false,
-		MasterName:   "casty",
-		Sentinels:    []string{"127.0.0.1:26379"},
-		Addr:         "127.0.0.1:26379",
-		Pass:         "super-secure-password",
-		SentinelPass: "super-secure-sentinels-password",
-	},
-	DB: DBConfig{
+	DB: config.DBConfig{
 		Name: "casty",
-		Host: "localhost",
+		Host: "127.0.0.1",
 		Port: 27017,
-		User: "service",
-		Pass: "super-secure-password",
+		User: "gotest",
+		Pass: "super-secure-mongodb-password",
 	},
-	JWT: JWTConfig{
-		AccessToken: JWTToken{
+	JWT: config.JWTConfig{
+		AccessToken: config.JWTToken{
 			Secret: "random-secret",
-			ExpiresAt: JWTExpiresAt{
+			ExpiresAt: config.JWTExpiresAt{
 				Type:  "days",
 				Value: 1,
 			},
 		},
-		RefreshToken: JWTToken{
+		RefreshToken: config.JWTToken{
 			Secret: "random-secret",
-			ExpiresAt: JWTExpiresAt{
+			ExpiresAt: config.JWTExpiresAt{
 				Type:  "days",
 				Value: 7,
 			},
 		},
 	},
-	Oauth: OauthConfig{
+	Oauth: config.OauthConfig{
 		RegistrationByOauth: true,
-		Google: OauthClient{
+		Google: config.OauthClient{
 			Enabled:      false,
 			ClientID:     "",
 			ClientSecret: "",
@@ -56,7 +52,7 @@ var defaultConfig = &ConfigMap{
 			TokenUri:     "https://oauth2.googleapis.com/token",
 			RedirectUri:  "https://casty.ir/oauth/google/callback",
 		},
-		Spotify: OauthClient{
+		Spotify: config.OauthClient{
 			Enabled:      false,
 			ClientID:     "",
 			ClientSecret: "",
@@ -65,16 +61,16 @@ var defaultConfig = &ConfigMap{
 			RedirectUri:  "https://casty.ir/oauth/spotify/callback",
 		},
 	},
-	S3: S3Config{
+	S3: config.S3Config{
 		Endpoint:  "127.0.0.1:9000",
 		AccessKey: "secret-access-key",
 		SecretKey: "secret-key",
 	},
-	Sentry: SentryConfig{
+	Sentry: config.SentryConfig{
 		Enabled: false,
 		Dsn:     "sentry.dsn.here",
 	},
-	Recaptcha: RecaptchaConfig{
+	Recaptcha: config.RecaptchaConfig{
 		Enabled: false,
 		Type:    "hcaptcha",
 		Secret:  "hcaptcha-secret-token",
@@ -82,7 +78,7 @@ var defaultConfig = &ConfigMap{
 }
 
 func TestLoadConfig(t *testing.T) {
-	configMap, err := LoadFile(filepath.Join("config_test.hcl"))
+	configMap, err := config.LoadFile(filepath.Join(configFileName))
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

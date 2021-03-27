@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/castyapp/grpc.server/config"
+	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,14 +32,14 @@ func Load(c *config.ConfigMap) error {
 	return nil
 }
 
-func CreateNewTokens(db *mongo.Database, ctx context.Context, userid string) (token, refreshedToken string, err error) {
+func CreateNewTokens(ctx *core.Context, userid string) (token, refreshedToken string, err error) {
 	//generate the auth token
 	token, err = createAuthToken(userid)
 	if err != nil {
 		return
 	}
 	// generate the refresh token
-	refreshedToken, err = createRefreshToken(db, ctx, userid)
+	refreshedToken, err = createRefreshToken(ctx, userid)
 	if err != nil {
 		return
 	}
@@ -60,7 +61,7 @@ func createAuthToken(userid string) (token string, err error) {
 	return
 }
 
-func createRefreshToken(db *mongo.Database, ctx context.Context, userid string) (refreshTokenString string, err error) {
+func createRefreshToken(ctx *core.Context, userid string) (refreshTokenString string, err error) {
 
 	var userObjectId primitive.ObjectID
 	userObjectId, err = primitive.ObjectIDFromHex(userid)
@@ -70,7 +71,13 @@ func createRefreshToken(db *mongo.Database, ctx context.Context, userid string) 
 
 	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeRefreshedTokenInt))
 
+	dbConn, err := ctx.Get("db.mongo")
+	if err != nil {
+		return "", err
+	}
+
 	var (
+		db         = dbConn.(*mongo.Database)
 		result     *mongo.InsertOneResult
 		collection = db.Collection("refreshed_tokens")
 	)
@@ -99,9 +106,15 @@ func createRefreshToken(db *mongo.Database, ctx context.Context, userid string) 
 	return
 }
 
-func checkRefreshToken(db *mongo.Database, ctx context.Context, id string) (*models.RefreshedToken, error) {
+func checkRefreshToken(ctx *core.Context, id string) (*models.RefreshedToken, error) {
+
+	dbConn, err := ctx.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
 
 	var (
+		db             = dbConn.(*mongo.Database)
 		refreshedToken = new(models.RefreshedToken)
 		collection     = db.Collection("refreshed_tokens")
 	)
@@ -123,7 +136,7 @@ func checkRefreshToken(db *mongo.Database, ctx context.Context, id string) (*mod
 	return nil, errors.New("could not find refreshed token or maybe expired")
 }
 
-func RefreshToken(db *mongo.Database, ctx context.Context, refreshTokenString string) (token, refreshedToken string, err error) {
+func RefreshToken(ctx *core.Context, refreshTokenString string) (token, refreshedToken string, err error) {
 
 	var refreshToken *jwt.Token
 	refreshToken, err = jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -149,26 +162,24 @@ func RefreshToken(db *mongo.Database, ctx context.Context, refreshTokenString st
 			return
 		}
 
-		if err = deleteRefreshToken(db, ctx, refreshedTokenObjectId); err != nil {
+		if err = deleteRefreshToken(ctx, refreshedTokenObjectId); err != nil {
 			return
 		}
 
 		return
 	}
 
-	dbRefreshedToken, rErr := checkRefreshToken(db, ctx, refreshTokenClaims.Id)
+	dbRefreshedToken, rErr := checkRefreshToken(ctx, refreshTokenClaims.Id)
 	if rErr != nil {
 		err = errors.New("could not decode refresh token or maybe token expired")
 		return
 	}
 
 	if refreshToken.Valid {
-
-		if err = deleteRefreshToken(db, ctx, *dbRefreshedToken.ID); err != nil {
+		if err = deleteRefreshToken(ctx, *dbRefreshedToken.ID); err != nil {
 			return
 		}
-
-		token, refreshedToken, err = CreateNewTokens(db, ctx, dbRefreshedToken.UserId.Hex())
+		token, refreshedToken, err = CreateNewTokens(ctx, dbRefreshedToken.UserId.Hex())
 		return
 	}
 
@@ -176,9 +187,15 @@ func RefreshToken(db *mongo.Database, ctx context.Context, refreshTokenString st
 	return
 }
 
-func deleteRefreshToken(db *mongo.Database, ctx context.Context, jti primitive.ObjectID) (err error) {
+func deleteRefreshToken(ctx *core.Context, jti primitive.ObjectID) (err error) {
+
+	dbConn, err := ctx.Get("db.mongo")
+	if err != nil {
+		return err
+	}
 
 	var (
+		db         = dbConn.(*mongo.Database)
 		result     *mongo.DeleteResult
 		collection = db.Collection("refreshed_tokens")
 	)
@@ -196,7 +213,14 @@ func deleteRefreshToken(db *mongo.Database, ctx context.Context, jti primitive.O
 	return
 }
 
-func DecodeAuthToken(db *mongo.Database, token []byte) (user *models.User, err error) {
+func DecodeAuthToken(ctx *core.Context, token []byte) (user *models.User, err error) {
+
+	database, err := ctx.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
+	db := database.(*mongo.Database)
 
 	// now, check that it matches what's in the auth token claims
 	var authToken *jwt.Token
@@ -220,7 +244,7 @@ func DecodeAuthToken(db *mongo.Database, token []byte) (user *models.User, err e
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	mCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	objectId, err := primitive.ObjectIDFromHex(authTokenClaims.Subject)
@@ -231,7 +255,7 @@ func DecodeAuthToken(db *mongo.Database, token []byte) (user *models.User, err e
 	usersCollection := db.Collection("users")
 	user = new(models.User)
 
-	if err := usersCollection.FindOne(ctx, bson.M{"_id": objectId}).Decode(&user); err != nil {
+	if err := usersCollection.FindOne(mCtx, bson.M{"_id": objectId}).Decode(&user); err != nil {
 		return nil, fmt.Errorf("invalid user")
 	}
 

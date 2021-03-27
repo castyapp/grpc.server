@@ -16,8 +16,14 @@ import (
 
 func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*proto.SearchUserResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		collection    = s.db.Collection("users")
+		db            = dbConn.(*mongo.Database)
+		collection    = db.Collection("users")
 		emptyResponse = &proto.SearchUserResponse{
 			Status: "success",
 			Code:   http.StatusOK,
@@ -25,7 +31,7 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		}
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}

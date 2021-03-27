@@ -13,22 +13,29 @@ import (
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterRequest) (*proto.Response, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		theater           = new(models.Theater)
 		friends           = make([]*models.User, 0)
-		collection        = s.db.Collection("theaters")
-		usersCollection   = s.db.Collection("users")
-		notifsCollections = s.db.Collection("notifications")
+		collection        = db.Collection("theaters")
+		usersCollection   = db.Collection("users")
+		notifsCollections = db.Collection("notifications")
 		emptyResponse     = status.Error(codes.Internal, "Could not send invitations, Please tray again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return &proto.Response{
 			Status:  "failed",
@@ -102,7 +109,7 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 	for _, friend := range friends {
 		event, err := protocol.NewMsgProtobuf(proto.EMSG_NEW_NOTIFICATION, &proto.NotificationMsgEvent{})
 		if err == nil {
-			err := helpers.SendEventToUser(ctx, event.Bytes(), &proto.User{Id: friend.ID.Hex()})
+			err := helpers.SendEventToUser(s.Context, event.Bytes(), &proto.User{Id: friend.ID.Hex()})
 			if err != nil {
 				log.Println(err)
 			}

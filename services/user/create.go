@@ -16,6 +16,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,12 +39,18 @@ var invalidUsernames = []string{
 
 func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) (*proto.AuthResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db               = dbConn.(*mongo.Database)
 		user             = req.User
 		validationErrors []*any.Any
 		existsUser       = new(models.User)
-		collection       = s.db.Collection("users")
-		thCollection     = s.db.Collection("theaters")
+		collection       = db.Collection("users")
+		thCollection     = db.Collection("theaters")
 	)
 
 	for _, invalid := range invalidUsernames {
@@ -132,7 +139,7 @@ func (s *Service) CreateUser(ctx context.Context, req *proto.CreateUserRequest) 
 
 	resultID := result.InsertedID.(primitive.ObjectID)
 
-	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(s.db, ctx, resultID.Hex())
+	newAuthToken, newRefreshedToken, err := jwt.CreateNewTokens(s.Context, resultID.Hex())
 	if err != nil {
 		log.Println(err)
 		return nil, status.Error(codes.Internal, "Could not create the user, Please try again later!")

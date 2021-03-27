@@ -10,20 +10,27 @@ import (
 	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*proto.FriendResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                 = dbConn.(*mongo.Database)
 		dbFriend           = new(models.Friend)
 		dbFriendUserObject = new(models.User)
-		userCollection     = s.db.Collection("users")
-		friendsCollection  = s.db.Collection("friends")
+		userCollection     = db.Collection("users")
+		friendsCollection  = db.Collection("friends")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +73,20 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 
 func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest) (*proto.Friend, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db                = dbConn.(*mongo.Database)
 		dbFriend          = new(models.Friend)
-		friendsCollection = s.db.Collection("friends")
+		friendsCollection = db.Collection("friends")
 		failedResponse    = &proto.Friend{}
 		failedErr         = status.Error(codes.Internal, "Could not et friend request!")
 	)
 
-	if _, err := auth.Authenticate(s.db, req.AuthRequest); err != nil {
+	if _, err := auth.Authenticate(s.Context, req.AuthRequest); err != nil {
 		return nil, err
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -26,12 +27,18 @@ type NotificationData struct {
 
 func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.NotificationResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		collection     = s.db.Collection("notifications")
+		db             = dbConn.(*mongo.Database)
+		collection     = db.Collection("notifications")
 		failedResponse = status.Error(codes.InvalidArgument, "Could not create notification, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req.AuthRequest)
+	user, err := auth.Authenticate(s.Context, req.AuthRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +106,19 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 
 func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		db               = dbConn.(*mongo.Database)
 		notifications    = make([]*proto.Notification, 0)
-		notifsCollection = s.db.Collection("notifications")
+		notifsCollection = db.Collection("notifications")
 		failedResponse   = status.Error(codes.Internal, "Could not get notifications, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +140,7 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		if err := cursor.Decode(notification); err != nil {
 			continue
 		}
-		messageNotification, err := helpers.NewNotificationProto(s.db, notification)
+		messageNotification, err := helpers.NewNotificationProto(db, notification)
 		if err != nil {
 			continue
 		}
@@ -147,12 +160,18 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 
 func (s *Service) ReadAllNotifications(ctx context.Context, req *proto.AuthenticateRequest) (*proto.NotificationResponse, error) {
 
+	dbConn, err := s.Get("db.mongo")
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		notifsCollection = s.db.Collection("notifications")
+		db               = dbConn.(*mongo.Database)
+		notifsCollection = db.Collection("notifications")
 		failedResponse   = status.Error(codes.Internal, "Could not update notifications, Please try again later!")
 	)
 
-	user, err := auth.Authenticate(s.db, req)
+	user, err := auth.Authenticate(s.Context, req)
 	if err != nil {
 		return nil, err
 	}
