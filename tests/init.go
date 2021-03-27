@@ -9,9 +9,8 @@ import (
 	"github.com/CastyLab/grpc.proto/proto"
 	"github.com/castyapp/grpc.server/config"
 	"github.com/castyapp/grpc.server/core"
-	"github.com/castyapp/grpc.server/db"
 	"github.com/castyapp/grpc.server/jwt"
-	"github.com/castyapp/grpc.server/redis"
+	"github.com/castyapp/grpc.server/providers"
 	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/castyapp/grpc.server/services/message"
 	"github.com/castyapp/grpc.server/services/theater"
@@ -40,22 +39,24 @@ func newContext() *core.Context {
 	return ctx.With(
 
 		// Registering configmap provider
-		config.Provider,
+		&providers.ConfigProvider{},
 
 		// config database (mongodb)
-		db.Provider,
+		&providers.DatabaseProvider{},
 
 		// configure jwt
-		func(ctx *core.Context) error {
-			cm := ctx.MustGet("config.map").(*config.ConfigMap)
-			if err := jwt.Load(cm); err != nil {
-				return fmt.Errorf("could not load jwt configuration: %v", err)
-			}
-			return nil
+		&providers.LambdaProvider{
+			Registeration: func(ctx *core.Context) error {
+				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				if err := jwt.Load(cm); err != nil {
+					return fmt.Errorf("could not load jwt configuration: %v", err)
+				}
+				return nil
+			},
 		},
 
 		// configure redis connection
-		redis.Provider,
+		&providers.RedisProvider{},
 	)
 }
 
