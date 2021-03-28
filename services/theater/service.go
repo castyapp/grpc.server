@@ -1,7 +1,7 @@
 package theater
 
 import (
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
 )
 

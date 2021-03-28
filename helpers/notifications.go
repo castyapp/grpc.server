@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"

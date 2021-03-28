@@ -16,19 +16,14 @@ import (
 )
 
 var (
-	expireTimeInt,
-	expireTimeRefreshedTokenInt int
-
-	accessTokenSecret,
-	refreshTokenSecret []byte
+	accessToken,
+	refreshToken config.JWTToken
 )
 
 // read the key files before starting http handlers
 func Load(c *config.ConfigMap) error {
-	expireTimeInt = c.JWT.AccessToken.ExpiresAt.Value
-	expireTimeRefreshedTokenInt = c.JWT.RefreshToken.ExpiresAt.Value
-	accessTokenSecret = []byte(c.JWT.AccessToken.Secret)
-	refreshTokenSecret = []byte(c.JWT.RefreshToken.Secret)
+	accessToken = c.JWT.AccessToken
+	accessToken = c.JWT.RefreshToken
 	return nil
 }
 
@@ -46,9 +41,13 @@ func CreateNewTokens(ctx *core.Context, userid string) (token, refreshedToken st
 	return
 }
 
+func getExpireType() time.Duration {
+	return 0
+}
+
 func createAuthToken(userid string) (token string, err error) {
 
-	authTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeInt)).Unix()
+	authTokenExp := time.Now().Add(accessToken.GetExpireDuration()).Unix()
 
 	// create a signer for rsa 256
 	authJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
@@ -57,7 +56,7 @@ func createAuthToken(userid string) (token string, err error) {
 	})
 
 	// generate the auth token string
-	token, err = authJwt.SignedString(accessTokenSecret)
+	token, err = authJwt.SignedString(accessToken.GetSecretAtBytes())
 	return
 }
 
@@ -69,7 +68,7 @@ func createRefreshToken(ctx *core.Context, userid string) (refreshTokenString st
 		return
 	}
 
-	refreshTokenExp := time.Now().Add(time.Hour * time.Duration(expireTimeRefreshedTokenInt))
+	refreshTokenExp := time.Now().Add(refreshToken.GetExpireDuration())
 
 	dbConn, err := ctx.Get("db.mongo")
 	if err != nil {
@@ -102,7 +101,7 @@ func createRefreshToken(ctx *core.Context, userid string) (refreshTokenString st
 	})
 
 	// generate the refresh token string
-	refreshTokenString, err = refreshJwt.SignedString(refreshTokenSecret)
+	refreshTokenString, err = refreshJwt.SignedString(refreshToken.GetSecretAtBytes())
 	return
 }
 
@@ -138,17 +137,17 @@ func checkRefreshToken(ctx *core.Context, id string) (*models.RefreshedToken, er
 
 func RefreshToken(ctx *core.Context, refreshTokenString string) (token, refreshedToken string, err error) {
 
-	var refreshToken *jwt.Token
-	refreshToken, err = jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return refreshTokenSecret, nil
+	var jwtRefreshToken *jwt.Token
+	jwtRefreshToken, err = jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return refreshToken.GetSecretAtBytes(), nil
 	})
 
-	if refreshToken == nil {
+	if jwtRefreshToken == nil {
 		err = errors.New("error reading jwt claims")
 		return
 	}
 
-	refreshTokenClaims, ok := refreshToken.Claims.(*jwt.StandardClaims)
+	refreshTokenClaims, ok := jwtRefreshToken.Claims.(*jwt.StandardClaims)
 	if !ok {
 		err = errors.New("error reading jwt claims")
 		return
@@ -175,7 +174,7 @@ func RefreshToken(ctx *core.Context, refreshTokenString string) (token, refreshe
 		return
 	}
 
-	if refreshToken.Valid {
+	if jwtRefreshToken.Valid {
 		if err = deleteRefreshToken(ctx, *dbRefreshedToken.ID); err != nil {
 			return
 		}
@@ -225,7 +224,7 @@ func DecodeAuthToken(ctx *core.Context, token []byte) (user *models.User, err er
 	// now, check that it matches what's in the auth token claims
 	var authToken *jwt.Token
 	authToken, err = jwt.ParseWithClaims(string(token), &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return accessTokenSecret, nil
+		return accessToken.GetSecretAtBytes(), nil
 	})
 
 	if authToken == nil || authToken.Claims == nil {

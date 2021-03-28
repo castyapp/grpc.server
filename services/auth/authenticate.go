@@ -3,7 +3,7 @@ package auth
 import (
 	"strings"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/jwt"

@@ -37,7 +37,7 @@ jwt {
     secret = "random-secret"
     # If you wish to change valid duration of a access_token, change this value
     expires_at {
-      type  = "days" # can be [seconds|minutes|hours|days]
+      type  = "days" # can be [seconds|minutes|hours|days|weeks]
       value = 1
     }
   }
@@ -46,8 +46,8 @@ jwt {
     secret = "random-secret"
     # If you wish to change valid duration of a refresh_token, change this value
     expires_at {
-      type  = "days" # can be [seconds|minutes|hours|days]
-      value = 7
+      type  = "weeks" # can be [seconds|minutes|hours|days|weeks]
+      value = 1
     }
   }
 }

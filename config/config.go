@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/castyapp/grpc.server/core"
 	"github.com/hashicorp/hcl"
@@ -73,6 +74,27 @@ type JWTExpiresAt struct {
 type JWTToken struct {
 	Secret    string       `hcl:"secret"`
 	ExpiresAt JWTExpiresAt `hcl:"expires_at,block"`
+}
+
+func (t JWTToken) GetSecretAtBytes() []byte {
+	return []byte(t.Secret)
+}
+
+func (t JWTToken) GetExpireDuration() time.Duration {
+	switch t.ExpiresAt.Type {
+	case "days":
+		return (time.Hour * 24) * time.Duration(t.ExpiresAt.Value)
+	case "weeks":
+		aweek := (time.Hour * 24) * 7
+		return aweek * time.Duration(t.ExpiresAt.Value)
+	case "minutes":
+		return time.Minute * time.Duration(t.ExpiresAt.Value)
+	case "seconds":
+		return time.Second * time.Duration(t.ExpiresAt.Value)
+	case "hours":
+		return time.Hour * time.Duration(t.ExpiresAt.Value)
+	}
+	return 0
 }
 
 type JWTConfig struct {

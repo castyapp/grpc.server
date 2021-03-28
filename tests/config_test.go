@@ -37,8 +37,8 @@ var defaultConfig = &config.ConfigMap{
 		RefreshToken: config.JWTToken{
 			Secret: "random-secret",
 			ExpiresAt: config.JWTExpiresAt{
-				Type:  "days",
-				Value: 7,
+				Type:  "weeks",
+				Value: 1,
 			},
 		},
 	},

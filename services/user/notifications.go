@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/db/models"
 	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/golang/protobuf/ptypes"

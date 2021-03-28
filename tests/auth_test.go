@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc"
