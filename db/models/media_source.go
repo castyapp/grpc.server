@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

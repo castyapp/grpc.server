@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
 	"google.golang.org/grpc/codes"

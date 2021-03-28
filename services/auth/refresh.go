@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/CastyLab/grpc.proto/proto"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/jwt"
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
