@@ -1,9 +1,6 @@
 # Debug mode
 debug = false
 
-# Metrics api enabled?
-matrics = false
-
 # Application environment
 env = "dev"
 
@@ -28,6 +25,7 @@ db {
   port = 27017
   user = "gotest"
   pass = "super-secure-mongodb-password"
+  auth_source = ""
 }
 
 # JWT secrets

@@ -10,7 +10,6 @@ import (
 
 var defaultConfig = &config.ConfigMap{
 	Debug:    false,
-	Metrics:  false,
 	Env:      "dev",
 	Timezone: "America/California",
 	Redis: config.RedisConfig{
@@ -20,11 +19,12 @@ var defaultConfig = &config.ConfigMap{
 		Pass:       "super-secure-redis-password",
 	},
 	DB: config.DBConfig{
-		Name: "casty",
-		Host: "casty.db",
-		Port: 27017,
-		User: "gotest",
-		Pass: "super-secure-mongodb-password",
+		Name:       "casty",
+		Host:       "casty.db",
+		Port:       27017,
+		User:       "gotest",
+		Pass:       "super-secure-mongodb-password",
+		AuthSource: "",
 	},
 	JWT: config.JWTConfig{
 		AccessToken: config.JWTToken{
