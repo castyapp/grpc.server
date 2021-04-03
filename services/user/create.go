@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/jwt"
 	"github.com/castyapp/grpc.server/services"
 	"github.com/getsentry/sentry-go"

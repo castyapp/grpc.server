@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/config"
 	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/jwt"
@@ -18,6 +17,7 @@ import (
 	"github.com/castyapp/grpc.server/services/theater"
 	"github.com/castyapp/grpc.server/services/user"
 	"github.com/castyapp/grpc.server/storage"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

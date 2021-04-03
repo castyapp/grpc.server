@@ -35,11 +35,12 @@ $ cp example.config.hcl config.hcl
 Put your mongodb connection here
 ```hcl
 db {
-  name = "casty"
-  host = "localhost"
-  port = 27017
-  user = "service"
-  pass = "super-secure-password"
+  name        = "casty"
+  host        = "localhost"
+  port        = 27017
+  user        = "service"
+  pass        = "super-secure-password"
+  auth_source = ""
 }
 ```
 

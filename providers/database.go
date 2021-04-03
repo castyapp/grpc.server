@@ -9,6 +9,7 @@ import (
 	"github.com/castyapp/grpc.server/core"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type DatabaseProvider struct {
@@ -37,6 +38,10 @@ func (p *DatabaseProvider) Register(ctx *core.Context) error {
 
 	if err := client.Connect(mCtx); err != nil {
 		return fmt.Errorf("could not connect to mongodb client: %v", err)
+	}
+
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		return fmt.Errorf("could not ping mongodb client: %v", err)
 	}
 
 	conn := client.Database(cm.DB.Name)

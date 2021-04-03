@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"

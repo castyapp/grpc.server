@@ -6,7 +6,7 @@ import (
 
 	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"

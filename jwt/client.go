@@ -8,7 +8,7 @@ import (
 
 	"github.com/castyapp/grpc.server/config"
 	"github.com/castyapp/grpc.server/core"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
