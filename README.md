@@ -3,6 +3,11 @@
 
 * **What is gRPC and why we're using it?** According to [gRPC official website](https://grpc.io/): <br/> gRPC is a modern open source high performance RPC framework that can run in any environment. It can efficiently connect services in and across data centers with pluggable support for load balancing, tracing, health checking and authentication. It is also applicable in last mile of distributed computing to connect devices, mobile applications and browsers to backend services.
 
+
+## Prerequisites
+* First, ensure that you have installed Go 1.15 or higher
+* mongodb **This project uses mongodb!**  [Mongodb official website](https://www.mongodb.com/)
+
 ## Pull Docker Image
 ```bash
 $ docker pull castyapp/grpc:latest
@@ -13,11 +18,19 @@ $ docker pull castyapp/grpc:latest
 $ docker run -p 55283:55283 castyapp/grpc
 ```
 
-## Prerequisites
+## Docker-Compose example
+```yaml
+version: '3'
 
-* First, ensure that you have installed Go 1.11 or higher since we need the support for Go modules via go mod. [Go modules via `go mod`](https://github.com/golang/go/wiki/Modules)
-
-* mongodb **This project uses mongodb as database connection!**  [Mongodb official website](https://www.mongodb.com/)
+services:
+  grpc:
+    image: castyapp/grpc:latest
+    ports:
+      - 55283:55283
+    args: ['--config-file', '/config/config.hcl']
+    volumes:
+      - $PWD/config.hcl:/config/config.hcl
+```
 
 ## Clone the project
 ```bash
@@ -93,13 +106,11 @@ You're ready to Go!
 
 ## Run project with go compiler
 you can simply run the project with following command
-* this command with install dependencies and after that will run the project
-* this project uses go mod file, You can run this project out of the $GOPAH file!
 ```bash
 $ go run server.go
 ```
 
-or if you're considering building the project use
+or if you're considering building the project
 ```bash
 $ go build -o server .
 ```
@@ -113,3 +124,6 @@ $ docker run -dp --restart=always 55283:55283 casty.grpc
 
 ## Contributing
 Thank you for considering contributing to this project!
+
+## License
+Casty is an open-source software licensed under the MIT license.
