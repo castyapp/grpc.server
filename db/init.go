@@ -21,9 +21,9 @@ func Provider(ctx *core.Context) error {
 	opts := options.Client()
 	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", cm.DB.Host, cm.DB.Port))
 	opts.SetAuth(options.Credential{
-		Username: cm.DB.User,
-		Password: cm.DB.Pass,
-		//AuthSource: cm.DB.Name,
+		Username:   cm.DB.User,
+		Password:   cm.DB.Pass,
+		AuthSource: cm.DB.AuthSource,
 	})
 
 	client, err := mongo.NewClient(opts)

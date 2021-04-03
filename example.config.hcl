@@ -1,9 +1,6 @@
 # Debug mode
 debug = false
 
-# Metrics api enabled?
-matrics = false
-
 # Application environment
 env = "dev"
 
@@ -27,11 +24,12 @@ redis {
 
 # Database (mongodb) config
 db {
-  name = "casty"
-  host = "localhost"
-  port = 27017
-  user = "service"
-  pass = "super-secure-password"
+  name        = "casty"
+  host        = "localhost"
+  port        = 27017
+  user        = "service"
+  pass        = "super-secure-password"
+  auth_source = ""
 }
 
 # JWT secrets

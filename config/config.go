@@ -12,7 +12,6 @@ import (
 type ConfigMap struct {
 	Debug     bool            `hcl:"debug"`
 	Env       string          `hcl:"env"`
-	Metrics   bool            `hcl:"metrics"`
 	Timezone  string          `hcl:"timezone"`
 	Redis     RedisConfig     `hcl:"redis,block"`
 	DB        DBConfig        `hcl:"db,block"`
@@ -33,11 +32,12 @@ type RedisConfig struct {
 }
 
 type DBConfig struct {
-	Name string `hcl:"name"`
-	Host string `hcl:"host"`
-	Port int    `hcl:"port"`
-	User string `hcl:"user"`
-	Pass string `hcl:"pass"`
+	Name       string `hcl:"name"`
+	Host       string `hcl:"host"`
+	Port       int    `hcl:"port"`
+	User       string `hcl:"user"`
+	Pass       string `hcl:"pass"`
+	AuthSource string `hcl:"auth_source"`
 }
 
 type OauthClient struct {
