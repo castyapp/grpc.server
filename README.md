@@ -106,13 +106,11 @@ You're ready to Go!
 
 ## Run project with go compiler
 you can simply run the project with following command
-* this command with install dependencies and after that will run the project
-* this project uses go mod file, You can run this project out of the $GOPAH file!
 ```bash
 $ go run server.go
 ```
 
-or if you're considering building the project use
+or if you're considering building the project
 ```bash
 $ go build -o server .
 ```
@@ -126,3 +124,6 @@ $ docker run -dp --restart=always 55283:55283 casty.grpc
 
 ## Contributing
 Thank you for considering contributing to this project!
+
+## License
+Casty is an open-source software licensed under the MIT license.
