@@ -13,6 +13,20 @@ $ docker pull castyapp/grpc:latest
 $ docker run -p 55283:55283 castyapp/grpc
 ```
 
+## Docker-Compose example
+```yaml
+version: '3'
+
+services:
+  grpc:
+    image: castyapp/grpc:latest
+    ports:
+      - 55283:55283
+    args: ['--config-file', '/config/config.hcl']
+    volumes:
+      - $PWD/config.hcl:/config/config.hcl
+```
+
 ## Prerequisites
 
 * First, ensure that you have installed Go 1.11 or higher since we need the support for Go modules via go mod. [Go modules via `go mod`](https://github.com/golang/go/wiki/Modules)
