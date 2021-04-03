@@ -3,6 +3,11 @@
 
 * **What is gRPC and why we're using it?** According to [gRPC official website](https://grpc.io/): <br/> gRPC is a modern open source high performance RPC framework that can run in any environment. It can efficiently connect services in and across data centers with pluggable support for load balancing, tracing, health checking and authentication. It is also applicable in last mile of distributed computing to connect devices, mobile applications and browsers to backend services.
 
+
+## Prerequisites
+* First, ensure that you have installed Go 1.15 or higher
+* mongodb **This project uses mongodb!**  [Mongodb official website](https://www.mongodb.com/)
+
 ## Pull Docker Image
 ```bash
 $ docker pull castyapp/grpc:latest
@@ -26,12 +31,6 @@ services:
     volumes:
       - $PWD/config.hcl:/config/config.hcl
 ```
-
-## Prerequisites
-
-* First, ensure that you have installed Go 1.11 or higher since we need the support for Go modules via go mod. [Go modules via `go mod`](https://github.com/golang/go/wiki/Modules)
-
-* mongodb **This project uses mongodb as database connection!**  [Mongodb official website](https://www.mongodb.com/)
 
 ## Clone the project
 ```bash
