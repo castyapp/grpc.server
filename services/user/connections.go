@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/oauth/spotify"
 	"github.com/castyapp/grpc.server/services/auth"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

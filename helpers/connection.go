@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/db/models"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/golang/protobuf/ptypes"
 )
 
