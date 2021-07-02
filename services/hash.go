@@ -20,7 +20,7 @@ func RandomString(length int) string {
 	return string(b)
 }
 
-func SaveAvatarFromUrl(url string) (string, error) {
+func SaveAvatarFromURL(url string) (string, error) {
 	avatarName := RandomNumber(20)
 	resp, err := http.DefaultClient.Get(url)
 	if err != nil {

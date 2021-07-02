@@ -15,8 +15,7 @@ func (p *ConfigProvider) Register(ctx *core.Context) error {
 	if err != nil {
 		return fmt.Errorf("could not load config: %v", err)
 	}
-	ctx.Set("config.map", configMap)
-	return nil
+	return ctx.Set("config.map", configMap)
 }
 
 func (p *ConfigProvider) Close(ctx *core.Context) error {

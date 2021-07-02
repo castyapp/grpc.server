@@ -20,6 +20,8 @@ func mockUser() *proto.User {
 }
 
 func dropDatabase(t *testing.T) {
+	mockConext, err := newContext()
+	assert.NoError(t, err)
 	db, err := mockConext.Get("db.mongo")
 	assert.NoError(t, err)
 	err = db.(*mongo.Database).Drop(context.TODO())
@@ -39,6 +41,8 @@ func testGetUser(t *testing.T, name string, client proto.UserServiceClient, user
 }
 
 func TestAuthentication(t *testing.T) {
+
+	_, grpcListener := startGRPCServer()
 
 	dropDatabase(t)
 	defer dropDatabase(t)

@@ -7,15 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/libcasty-protocol-go/protocol"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services"
 	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/castyapp/grpc.server/storage"
+	"github.com/castyapp/libcasty-protocol-go/proto"
+	"github.com/castyapp/libcasty-protocol-go/protocol"
 	"github.com/getsentry/sentry-go"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/minio/minio-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,6 +23,7 @@ import (
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceAuthRequest) (*proto.TheaterMediaSourcesResponse, error) {
@@ -52,14 +52,14 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 		return nil, status.Error(codes.NotFound, "Could not find theater!")
 	}
 
-	mediaSourceId, err := primitive.ObjectIDFromHex(req.Media.Id)
+	mediaSourceID, err := primitive.ObjectIDFromHex(req.Media.Id)
 	if err != nil {
 		return nil, err
 	}
 
 	mediaSource := new(models.MediaSource)
 
-	decoder := db.Collection("media_sources").FindOne(ctx, bson.M{"_id": mediaSourceId, "user_id": user.ID})
+	decoder := db.Collection("media_sources").FindOne(ctx, bson.M{"_id": mediaSourceID, "user_id": user.ID})
 	if err := decoder.Decode(mediaSource); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *Service) SelectMediaSource(ctx context.Context, req *proto.MediaSourceA
 	}, nil
 }
 
-func (s *Service) SavePosterFromUrl(url string) (string, error) {
+func (s *Service) SavePosterFromURL(url string) (string, error) {
 	posterName := services.RandomNumber(20)
 	resp, err := http.DefaultClient.Get(url)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		validationErrors   []*any.Any
 		collection         = db.Collection("media_sources")
 		theatersCollection = db.Collection("theaters")
-		failedResponse     = status.Error(codes.Internal, "Could not add a new media source. Please try agian later!")
+		failedResponse     = status.Error(codes.Internal, "Could not add a new media source. Please try again later!")
 	)
 
 	user, err := auth.Authenticate(s.Context, req.AuthRequest)
@@ -160,7 +160,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 	}
 
 	var poster string
-	poster, err = s.SavePosterFromUrl(req.Media.Banner)
+	poster, err = s.SavePosterFromURL(req.Media.Banner)
 	if err != nil {
 		sentry.CaptureException(fmt.Errorf("could not upload poster %v", err))
 		poster = "default"
@@ -194,7 +194,7 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		return nil, status.Errorf(codes.Internal, "could not update media source, please try again later!")
 	}
 
-	createdAt, _ := ptypes.TimestampProto(time.Now())
+	nowTime := timestamppb.New(time.Now())
 	mediaSourceProto := &proto.MediaSource{
 		Id:        insertedID.Hex(),
 		Title:     req.Media.Title,
@@ -204,8 +204,8 @@ func (s *Service) AddMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		Length:    req.Media.Length,
 		Artist:    req.Media.Artist,
 		UserId:    user.ID.Hex(),
-		CreatedAt: createdAt,
-		UpdatedAt: createdAt,
+		CreatedAt: nowTime,
+		UpdatedAt: nowTime,
 	}
 
 	event, err := protocol.NewMsgProtobuf(proto.EMSG_THEATER_MEDIA_SOURCE_CHANGED, mediaSourceProto)
@@ -244,7 +244,7 @@ func (s *Service) GetMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		}, nil
 	}
 
-	mediaSourceObjectId, err := primitive.ObjectIDFromHex(req.Media.Id)
+	mediaSourceObjectID, err := primitive.ObjectIDFromHex(req.Media.Id)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "MediaSourceId is invalid!")
 	}
@@ -253,7 +253,7 @@ func (s *Service) GetMediaSource(ctx context.Context, req *proto.MediaSourceAuth
 		mediaSource = new(models.MediaSource)
 		filter      = bson.M{
 			"user_id": user.ID,
-			"_id":     mediaSourceObjectId,
+			"_id":     mediaSourceObjectID,
 		}
 	)
 

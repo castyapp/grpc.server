@@ -9,11 +9,11 @@ import (
 	"github.com/castyapp/grpc.server/helpers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
-	"github.com/golang/protobuf/ptypes"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -47,7 +47,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		return nil, status.Error(codes.InvalidArgument, "Notification entry not exists!")
 	}
 
-	friendObjectId, err := primitive.ObjectIDFromHex(req.Notification.ToUserId)
+	friendObjectID, err := primitive.ObjectIDFromHex(req.Notification.ToUserId)
 	if err != nil {
 		return nil, failedResponse
 	}
@@ -56,7 +56,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		"type":         int64(req.Notification.Type),
 		"read":         req.Notification.Read,
 		"from_user_id": user.ID,
-		"to_user_id":   friendObjectId,
+		"to_user_id":   friendObjectID,
 		"read_at":      time.Now(),
 		"created_at":   time.Now(),
 		"updated_at":   time.Now(),
@@ -69,11 +69,11 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		if err != nil {
 			return nil, failedResponse
 		}
-		theaterObjectId, err := primitive.ObjectIDFromHex(friend.Id)
+		theaterObjectID, err := primitive.ObjectIDFromHex(friend.Id)
 		if err != nil {
 			return nil, failedResponse
 		}
-		notification["extra"] = theaterObjectId
+		notification["extra"] = theaterObjectID
 	}
 
 	result, err := collection.InsertOne(ctx, notification)
@@ -81,10 +81,7 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 		return nil, failedResponse
 	}
 
-	var (
-		insertedID   = result.InsertedID.(*primitive.ObjectID)
-		createdAt, _ = ptypes.TimestampProto(time.Now())
-	)
+	insertedID := result.InsertedID.(*primitive.ObjectID)
 
 	return &proto.NotificationResponse{
 		Status:  "success",
@@ -97,8 +94,8 @@ func (s *Service) CreateNotification(ctx context.Context, req *proto.CreateNotif
 				Data:       notification["extra"].(string),
 				Read:       false,
 				FromUserId: user.ID.Hex(),
-				ToUserId:   friendObjectId.Hex(),
-				CreatedAt:  createdAt,
+				ToUserId:   friendObjectID.Hex(),
+				CreatedAt:  timestamppb.New(time.Now()),
 			},
 		},
 	}, nil
@@ -125,7 +122,10 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 
 	qOpts := options.Find()
 	qOpts.SetSort(bson.D{
-		{"created_at", -1},
+		primitive.E{
+			Key:   "created_at",
+			Value: -1,
+		},
 	})
 
 	cursor, err := notifsCollection.Find(ctx, bson.M{"to_user_id": user.ID}, qOpts)
@@ -133,8 +133,7 @@ func (s *Service) GetNotifications(ctx context.Context, req *proto.AuthenticateR
 		return nil, failedResponse
 	}
 
-	var unreadCount int64 = 0
-
+	var unreadCount int64
 	for cursor.Next(ctx) {
 		notification := new(models.Notification)
 		if err := cursor.Decode(notification); err != nil {

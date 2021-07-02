@@ -1,8 +1,8 @@
 package theater
 
 import (
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 )
 
 type Service struct {

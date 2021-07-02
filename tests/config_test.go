@@ -8,17 +8,17 @@ import (
 	"github.com/castyapp/grpc.server/config"
 )
 
-var defaultConfig = &config.ConfigMap{
+var defaultConfig = &config.Map{
 	Debug:    false,
 	Env:      "dev",
 	Timezone: "America/California",
-	Redis: config.RedisConfig{
+	Redis: config.RedisMap{
 		Cluster:    false,
 		MasterName: "casty",
 		Addr:       "casty.redis:6379",
 		Pass:       "super-secure-redis-password",
 	},
-	DB: config.DBConfig{
+	DB: config.DBMap{
 		Name:       "casty",
 		Host:       "casty.db",
 		Port:       27017,
@@ -26,7 +26,7 @@ var defaultConfig = &config.ConfigMap{
 		Pass:       "super-secure-mongodb-password",
 		AuthSource: "",
 	},
-	JWT: config.JWTConfig{
+	JWT: config.JWTMap{
 		AccessToken: config.JWTToken{
 			Secret: "random-secret",
 			ExpiresAt: config.JWTExpiresAt{
@@ -42,35 +42,35 @@ var defaultConfig = &config.ConfigMap{
 			},
 		},
 	},
-	Oauth: config.OauthConfig{
+	Oauth: config.OauthMap{
 		RegistrationByOauth: true,
 		Google: config.OauthClient{
 			Enabled:      false,
 			ClientID:     "",
 			ClientSecret: "",
-			AuthUri:      "https://accounts.google.com/o/oauth2/auth",
-			TokenUri:     "https://oauth2.googleapis.com/token",
-			RedirectUri:  "https://casty.ir/oauth/google/callback",
+			AuthURI:      "https://accounts.google.com/o/oauth2/auth",
+			TokenURI:     "https://oauth2.googleapis.com/token",
+			RedirectURI:  "https://casty.ir/oauth/google/callback",
 		},
 		Spotify: config.OauthClient{
 			Enabled:      false,
 			ClientID:     "",
 			ClientSecret: "",
-			AuthUri:      "https://accounts.spotify.com/authorize",
-			TokenUri:     "https://accounts.spotify.com/api/token",
-			RedirectUri:  "https://casty.ir/oauth/spotify/callback",
+			AuthURI:      "https://accounts.spotify.com/authorize",
+			TokenURI:     "https://accounts.spotify.com/api/token",
+			RedirectURI:  "https://casty.ir/oauth/spotify/callback",
 		},
 	},
-	S3: config.S3Config{
+	S3: config.S3Map{
 		Endpoint:  "127.0.0.1:9000",
 		AccessKey: "secret-access-key",
 		SecretKey: "secret-key",
 	},
-	Sentry: config.SentryConfig{
+	Sentry: config.SentryMap{
 		Enabled: false,
 		Dsn:     "sentry.dsn.here",
 	},
-	Recaptcha: config.RecaptchaConfig{
+	Recaptcha: config.RecaptchaMap{
 		Enabled: false,
 		Type:    "hcaptcha",
 		Secret:  "hcaptcha-secret-token",

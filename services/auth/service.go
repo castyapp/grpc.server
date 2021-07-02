@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/models"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,10 +30,7 @@ func (s *Service) isEmail(user string) bool {
 	re := regexp.MustCompile(
 		"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])" +
 			"?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-	if re.MatchString(user) {
-		return true
-	}
-	return false
+	return re.MatchString(user)
 }
 
 func ValidatePassword(user *models.User, pass string) bool {

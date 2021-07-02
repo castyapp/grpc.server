@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/models"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
@@ -24,7 +24,7 @@ func NewMemberProto(ctx *core.Context, member *models.TheaterMember) (*proto.Use
 		db       = dbConn.(*mongo.Database)
 		dbmember = new(models.User)
 		decoder  = db.Collection("users").
-				FindOne(context.Background(), bson.M{"_id": member.UserId})
+				FindOne(context.Background(), bson.M{"_id": member.UserID})
 	)
 	if err := decoder.Decode(dbmember); err != nil {
 		return nil, fmt.Errorf("could not decode theater member: %v", err)

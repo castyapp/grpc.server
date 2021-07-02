@@ -21,7 +21,7 @@ var (
 )
 
 // read the key files before starting http handlers
-func Load(c *config.ConfigMap) error {
+func Load(c *config.Map) error {
 	accessToken = c.JWT.AccessToken
 	accessToken = c.JWT.RefreshToken
 	return nil
@@ -41,10 +41,6 @@ func CreateNewTokens(ctx *core.Context, userid string) (token, refreshedToken st
 	return
 }
 
-func getExpireType() time.Duration {
-	return 0
-}
-
 func createAuthToken(userid string) (token string, err error) {
 
 	authTokenExp := time.Now().Add(accessToken.GetExpireDuration()).Unix()
@@ -62,8 +58,8 @@ func createAuthToken(userid string) (token string, err error) {
 
 func createRefreshToken(ctx *core.Context, userid string) (refreshTokenString string, err error) {
 
-	var userObjectId primitive.ObjectID
-	userObjectId, err = primitive.ObjectIDFromHex(userid)
+	var userObjectID primitive.ObjectID
+	userObjectID, err = primitive.ObjectIDFromHex(userid)
 	if err != nil {
 		return
 	}
@@ -82,7 +78,7 @@ func createRefreshToken(ctx *core.Context, userid string) (refreshTokenString st
 	)
 
 	result, err = collection.InsertOne(ctx, bson.M{
-		"user_id":    userObjectId,
+		"user_id":    userObjectID,
 		"valid":      true,
 		"created_at": time.Now(),
 		"expires_at": refreshTokenExp,
@@ -118,12 +114,12 @@ func checkRefreshToken(ctx *core.Context, id string) (*models.RefreshedToken, er
 		collection     = db.Collection("refreshed_tokens")
 	)
 
-	refreshedTokenObjectId, err := primitive.ObjectIDFromHex(id)
+	refreshedTokenObjectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	err = collection.FindOne(ctx, bson.M{"_id": refreshedTokenObjectId}).Decode(refreshedToken)
+	err = collection.FindOne(ctx, bson.M{"_id": refreshedTokenObjectID}).Decode(refreshedToken)
 	if err != nil {
 		return nil, err
 	}
@@ -135,55 +131,53 @@ func checkRefreshToken(ctx *core.Context, id string) (*models.RefreshedToken, er
 	return nil, errors.New("could not find refreshed token or maybe expired")
 }
 
-func RefreshToken(ctx *core.Context, refreshTokenString string) (token, refreshedToken string, err error) {
+func RefreshToken(ctx *core.Context, refreshTokenString string) (string, string, error) {
 
 	var jwtRefreshToken *jwt.Token
-	jwtRefreshToken, err = jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+	jwtRefreshToken, err := jwt.ParseWithClaims(refreshTokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return refreshToken.GetSecretAtBytes(), nil
 	})
+	if err != nil {
+		return "", "", err
+	}
 
 	if jwtRefreshToken == nil {
-		err = errors.New("error reading jwt claims")
-		return
+		return "", "", errors.New("error reading jwt claims")
 	}
 
 	refreshTokenClaims, ok := jwtRefreshToken.Claims.(*jwt.StandardClaims)
 	if !ok {
-		err = errors.New("error reading jwt claims")
-		return
+		return "", "", errors.New("error reading jwt claims")
 	}
 
 	if err = refreshTokenClaims.Valid(); err != nil {
 
-		var refreshedTokenObjectId primitive.ObjectID
-		refreshedTokenObjectId, err = primitive.ObjectIDFromHex(refreshTokenClaims.Id)
+		var refreshedTokenObjectID primitive.ObjectID
+		refreshedTokenObjectID, err = primitive.ObjectIDFromHex(refreshTokenClaims.Id)
 		if err != nil {
-			return
+			return "", "", err
 		}
 
-		if err = deleteRefreshToken(ctx, refreshedTokenObjectId); err != nil {
-			return
+		if err = deleteRefreshToken(ctx, refreshedTokenObjectID); err != nil {
+			return "", "", err
 		}
 
-		return
+		return "", "", err
 	}
 
 	dbRefreshedToken, rErr := checkRefreshToken(ctx, refreshTokenClaims.Id)
 	if rErr != nil {
-		err = errors.New("could not decode refresh token or maybe token expired")
-		return
+		return "", "", errors.New("could not decode refresh token or maybe token expired")
 	}
 
 	if jwtRefreshToken.Valid {
 		if err = deleteRefreshToken(ctx, *dbRefreshedToken.ID); err != nil {
-			return
+			return "", "", err
 		}
-		token, refreshedToken, err = CreateNewTokens(ctx, dbRefreshedToken.UserId.Hex())
-		return
+		return CreateNewTokens(ctx, dbRefreshedToken.UserID.Hex())
 	}
 
-	err = errors.New("unauthorized")
-	return
+	return "", "", errors.New("unauthorized")
 }
 
 func deleteRefreshToken(ctx *core.Context, jti primitive.ObjectID) (err error) {
@@ -246,7 +240,7 @@ func DecodeAuthToken(ctx *core.Context, token []byte) (user *models.User, err er
 	mCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	objectId, err := primitive.ObjectIDFromHex(authTokenClaims.Subject)
+	objectID, err := primitive.ObjectIDFromHex(authTokenClaims.Subject)
 	if err != nil {
 		return nil, fmt.Errorf("invalid user id")
 	}
@@ -254,7 +248,7 @@ func DecodeAuthToken(ctx *core.Context, token []byte) (user *models.User, err er
 	usersCollection := db.Collection("users")
 	user = new(models.User)
 
-	if err := usersCollection.FindOne(mCtx, bson.M{"_id": objectId}).Decode(&user); err != nil {
+	if err := usersCollection.FindOne(mCtx, bson.M{"_id": objectID}).Decode(&user); err != nil {
 		return nil, fmt.Errorf("invalid user")
 	}
 

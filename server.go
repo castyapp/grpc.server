@@ -25,12 +25,11 @@ import (
 
 var (
 	ctx  *core.Context
-	err  error
 	port *int
 	host *string
 )
 
-func init() {
+func main() {
 
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
@@ -42,7 +41,9 @@ func init() {
 	log.Printf("Loading ConfigMap from file: [%s]", *configFileName)
 
 	ctx = core.NewContext(context.Background())
-	ctx.Set("config.filepath", *configFileName)
+	if err := ctx.Set("config.filepath", *configFileName); err != nil {
+		log.Fatal(fmt.Errorf("could not set config.filepath to context: %v", err))
+	}
 
 	ctx.With(
 
@@ -61,7 +62,7 @@ func init() {
 		// configure jwt
 		&providers.LambdaProvider{
 			Registeration: func(ctx *core.Context) error {
-				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				cm := ctx.MustGet("config.map").(*config.Map)
 				if err := jwt.Load(cm); err != nil {
 					return fmt.Errorf("could not load jwt configuration: %v", err)
 				}
@@ -72,7 +73,7 @@ func init() {
 		// configure oauth clients
 		&providers.LambdaProvider{
 			Registeration: func(ctx *core.Context) error {
-				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				cm := ctx.MustGet("config.map").(*config.Map)
 				if err := oauth.ConfigureOAUTHClients(cm); err != nil {
 					return fmt.Errorf("could not load oauth clients configurations: %v", err)
 				}
@@ -83,7 +84,7 @@ func init() {
 		// configure s3 bucket (minio) storage
 		&providers.LambdaProvider{
 			Registeration: func(ctx *core.Context) error {
-				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				cm := ctx.MustGet("config.map").(*config.Map)
 				if err := storage.Configure(cm); err != nil {
 					return fmt.Errorf("could not configure s3 bucket storage client: %v", err)
 				}
@@ -91,10 +92,6 @@ func init() {
 			},
 		},
 	)
-
-}
-
-func main() {
 
 	defer ctx.Close()
 

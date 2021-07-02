@@ -7,13 +7,8 @@ import (
 
 var Client *minio.Client
 
-func Configure(c *config.ConfigMap) (err error) {
-	Client, err = minio.NewV4(
-		c.S3.Endpoint,
-		c.S3.AccessKey,
-		c.S3.SecretKey,
-		false,
-	)
+func Configure(c *config.Map) (err error) {
+	Client, err = minio.NewV4(c.S3.Endpoint, c.S3.AccessKey, c.S3.SecretKey, false)
 	if err != nil {
 		return err
 	}

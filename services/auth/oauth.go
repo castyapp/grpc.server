@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/oauth"
 	"github.com/castyapp/grpc.server/oauth/google"
 	"github.com/castyapp/grpc.server/oauth/spotify"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -66,14 +66,14 @@ func (s *Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*
 
 	var (
 		connection = new(models.Connection)
-		filter     = bson.M{"service_user_id": oauthUser.GetUserId()}
+		filter     = bson.M{"service_user_id": oauthUser.GetUserID()}
 	)
 
 	if err = consCollection.FindOne(ctx, filter).Decode(connection); err != nil {
 		if err == mongo.ErrNoDocuments {
 			if authenticated {
 				connection := bson.M{
-					"service_user_id": oauthUser.GetUserId(),
+					"service_user_id": oauthUser.GetUserID(),
 					"name":            oauthUser.GetFullname(),
 					"type":            req.Service,
 					"access_token":    token.AccessToken,
@@ -99,13 +99,13 @@ func (s *Service) CallbackOAUTH(ctx context.Context, req *proto.OAUTHRequest) (*
 	}
 
 	if authenticated {
-		if connection.UserId != user.ID {
+		if connection.UserID != user.ID {
 			return nil, status.Error(codes.AlreadyExists, "Connection already associated with another user!")
 		}
 		return nil, status.Error(codes.AlreadyExists, "Connection already exists!")
 	}
 
-	if err = collection.FindOne(ctx, bson.M{"_id": connection.UserId}).Decode(user); err != nil {
+	if err = collection.FindOne(ctx, bson.M{"_id": connection.UserID}).Decode(user); err != nil {
 		return nil, err
 	}
 

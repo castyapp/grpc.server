@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrKeyNodFound = errors.New("key not found!")
+	ErrKeyNodFound = errors.New("key not found")
 )
 
 type Provider interface {
@@ -28,7 +28,7 @@ type Context struct {
 }
 
 func NewContext(ctx context.Context) *Context {
-	return &Context{ctx: ctx, items: make(map[string]interface{}, 0)}
+	return &Context{ctx: ctx, items: make(map[string]interface{})}
 }
 
 func (c *Context) With(handlers ...Provider) *Context {

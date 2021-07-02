@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,9 +37,9 @@ func (s *Service) GetFriend(ctx context.Context, req *proto.FriendRequest) (*pro
 
 	findFriendFilter := bson.M{"username": req.FriendId}
 
-	friendObjectId, err := primitive.ObjectIDFromHex(req.FriendId)
+	friendObjectID, err := primitive.ObjectIDFromHex(req.FriendId)
 	if err == nil {
-		findFriendFilter = bson.M{"_id": friendObjectId}
+		findFriendFilter = bson.M{"_id": friendObjectID}
 	}
 
 	if err := userCollection.FindOne(ctx, findFriendFilter).Decode(dbFriendUserObject); err != nil {
@@ -90,12 +90,12 @@ func (s *Service) GetFriendRequest(ctx context.Context, req *proto.FriendRequest
 		return nil, err
 	}
 
-	requestObjectId, err := primitive.ObjectIDFromHex(req.RequestId)
+	requestObjectID, err := primitive.ObjectIDFromHex(req.RequestId)
 	if err != nil {
 		return failedResponse, failedErr
 	}
 
-	if err := friendsCollection.FindOne(ctx, bson.M{"_id": requestObjectId}).Decode(dbFriend); err != nil {
+	if err := friendsCollection.FindOne(ctx, bson.M{"_id": requestObjectID}).Decode(dbFriend); err != nil {
 		return failedResponse, status.Error(codes.NotFound, "Could not find friend request!")
 	}
 

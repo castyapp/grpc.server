@@ -5,11 +5,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/libcasty-protocol-go/protocol"
 	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/helpers"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
+	"github.com/castyapp/libcasty-protocol-go/protocol"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -142,7 +142,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	}
 	protoUser := helpers.NewProtoUser(user)
 
-	activityObjectId, err := primitive.ObjectIDFromHex(req.Activity.Id)
+	activityObjectID, err := primitive.ObjectIDFromHex(req.Activity.Id)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "Activity id is invalid!")
 	}
@@ -152,7 +152,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 		update = bson.M{
 			"$set": bson.M{
 				"activity": bson.M{
-					"_id":      activityObjectId,
+					"_id":      activityObjectID,
 					"activity": req.Activity.Activity,
 				},
 			},
@@ -165,7 +165,7 @@ func (s *Service) UpdateActivity(ctx context.Context, req *proto.UpdateActivityR
 	}
 
 	activity := &proto.Activity{
-		Id:       activityObjectId.Hex(),
+		Id:       activityObjectID.Hex(),
 		Activity: req.Activity.Activity,
 	}
 

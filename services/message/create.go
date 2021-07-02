@@ -6,23 +6,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
+	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/libcasty-protocol-go/protocol"
-	"github.com/castyapp/grpc.server/models"
-	"github.com/castyapp/grpc.server/helpers"
-	"github.com/castyapp/grpc.server/services/auth"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) (*proto.MessageResponse, error) {
 
 	var (
 		db              = s.MustGet("db.mongo").(*mongo.Database)
-		reciever        = new(models.User)
+		receiver        = new(models.User)
 		collection      = db.Collection("messages")
 		usersCollection = db.Collection("users")
 		failedResponse  = status.Error(codes.Internal, "Could not create message, Please try again later!")
@@ -33,18 +33,18 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) 
 		return nil, err
 	}
 
-	if user.Username == req.Message.Reciever.Id {
+	if user.Username == req.Message.Receiver.Id {
 		return nil, errors.New("receiver can not be you")
 	}
 
-	if err := usersCollection.FindOne(ctx, bson.M{"username": req.Message.Reciever.Id}).Decode(reciever); err != nil {
-		return nil, status.Error(codes.NotFound, "Could not find reciever!")
+	if err := usersCollection.FindOne(ctx, bson.M{"username": req.Message.Receiver.Id}).Decode(receiver); err != nil {
+		return nil, status.Error(codes.NotFound, "Could not find receiver!")
 	}
 
 	message := bson.M{
 		"content":     req.Message.Content,
 		"sender_id":   user.ID,
-		"receiver_id": reciever.ID,
+		"receiver_id": receiver.ID,
 		"edited":      false,
 		"deleted":     false,
 		"created_at":  time.Now(),
@@ -55,11 +55,11 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) 
 		return nil, failedResponse
 	}
 
-	nowTime, _ := ptypes.TimestampProto(time.Now())
+	nowTime := timestamppb.New(time.Now())
 	protoMessage := &proto.Message{
 		Content:   req.Message.Content,
 		Sender:    helpers.NewProtoUser(user),
-		Reciever:  helpers.NewProtoUser(reciever),
+		Receiver:  helpers.NewProtoUser(receiver),
 		Edited:    false,
 		Deleted:   false,
 		CreatedAt: nowTime,
@@ -69,13 +69,13 @@ func (s *Service) CreateMessage(ctx context.Context, req *proto.MessageRequest) 
 	buffer, err := protocol.NewMsgProtobuf(proto.EMSG_CHAT_MESSAGES, &proto.ChatMsgEvent{
 		Message:   []byte(protoMessage.Content),
 		Sender:    protoMessage.Sender,
-		Reciever:  protoMessage.Reciever,
+		Receiver:  protoMessage.Receiver,
 		CreatedAt: protoMessage.CreatedAt,
 	})
 	if err == nil {
 		helpers.SendEventToUsers(s.Context, buffer.Bytes(), []*proto.User{
 			protoMessage.Sender,
-			protoMessage.Reciever,
+			protoMessage.Receiver,
 		})
 	}
 

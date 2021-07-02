@@ -1,7 +1,7 @@
 package oauth
 
 type User interface {
-	GetUserId() string
+	GetUserID() string
 	GetFullname() string
 	GetAvatar() string
 	GetEmailAddress() string

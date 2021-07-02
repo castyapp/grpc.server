@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
+	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/libcasty-protocol-go/protocol"
-	"github.com/castyapp/grpc.server/models"
-	"github.com/castyapp/grpc.server/helpers"
-	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -54,7 +54,7 @@ func (s *Service) GetPendingFriendRequests(ctx context.Context, req *proto.Authe
 			continue
 		}
 
-		filter := bson.M{"_id": friend.UserId}
+		filter := bson.M{"_id": friend.UserID}
 		dbFriend := new(models.User)
 
 		if err := userCollection.FindOne(ctx, filter).Decode(dbFriend); err != nil {
@@ -118,9 +118,9 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req *proto.FriendRequ
 	}
 
 	// send event to friend clients
-	friendID := friendRequest.FriendId
-	if friendRequest.FriendId.Hex() == user.ID.Hex() {
-		friendID = friendRequest.UserId
+	friendID := friendRequest.FriendID
+	if friendRequest.FriendID.Hex() == user.ID.Hex() {
+		friendID = friendRequest.UserID
 	}
 
 	var friendObj = new(models.User)
@@ -206,7 +206,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		return nil, err
 	}
 
-	friendObjectId, err := primitive.ObjectIDFromHex(req.FriendId)
+	friendObjectID, err := primitive.ObjectIDFromHex(req.FriendId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "Invalid friend id!")
 	}
@@ -216,11 +216,11 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 			"$or": []interface{}{
 				bson.M{
 					"friend_id": user.ID,
-					"user_id":   friendObjectId,
+					"user_id":   friendObjectID,
 				},
 				bson.M{
 					"user_id":   user.ID,
-					"friend_id": friendObjectId,
+					"friend_id": friendObjectID,
 				},
 			},
 		}
@@ -235,7 +235,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, req *proto.FriendReques
 		return nil, status.Error(codes.Aborted, "Friend request sent already!")
 	}
 
-	if err := userCollection.FindOne(ctx, bson.M{"_id": friendObjectId}).Decode(friend); err != nil {
+	if err := userCollection.FindOne(ctx, bson.M{"_id": friendObjectID}).Decode(friend); err != nil {
 		return nil, failedResponse
 	}
 

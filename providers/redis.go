@@ -15,7 +15,7 @@ type RedisProvider struct {
 }
 
 func (p *RedisProvider) Register(ctx *core.Context) error {
-	cm := ctx.MustGet("config.map").(*config.ConfigMap)
+	cm := ctx.MustGet("config.map").(*config.Map)
 	if cm.Redis.Cluster {
 		p.client = redis.NewFailoverClient(&redis.FailoverOptions{
 			SentinelAddrs:    cm.Redis.Sentinels,

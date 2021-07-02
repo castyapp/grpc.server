@@ -9,11 +9,11 @@ import (
 
 type MediaSource struct {
 	ID        *primitive.ObjectID    `bson:"_id, omitempty" json:"id,omitempty"`
-	UserId    *primitive.ObjectID    `bson:"user_id,omitempty" json:"user_id,omitempty"`
+	UserID    *primitive.ObjectID    `bson:"user_id,omitempty" json:"user_id,omitempty"`
 	Title     string                 `bson:"title" json:"title"`
 	Type      proto.MediaSource_Type `bson:"type" json:"type,omitempty"`
 	Banner    string                 `bson:"banner" json:"banner,omitempty"`
-	Uri       string                 `bson:"uri" json:"uri,omitempty"`
+	URI       string                 `bson:"uri" json:"uri,omitempty"`
 	Length    int64                  `bson:"length" json:"length,omitempty"`
 	Artist    string                 `bson:"artist" json:"artist,omitempty"`
 	Subtitles []*Subtitle            `json:"subtitles,omitempty"`
