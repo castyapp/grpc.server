@@ -19,22 +19,14 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
-var (
-	mockConext     *core.Context
-	grpcSrvConn    *grpc.Server
-	grpcListener   *bufconn.Listener
-	configFileName = "./config_test.hcl"
-)
+const configFileName = "./config_test.hcl"
 
-func init() {
-	mockConext = newContext()
-	grpcSrvConn, grpcListener = startGRPCServer()
-}
-
-func newContext() *core.Context {
+func newContext() (*core.Context, error) {
 
 	ctx := core.NewContext(context.Background())
-	ctx.Set("config.filepath", configFileName)
+	if err := ctx.Set("config.filepath", configFileName); err != nil {
+		return nil, err
+	}
 
 	return ctx.With(
 
@@ -57,7 +49,7 @@ func newContext() *core.Context {
 
 		// configure redis connection
 		&providers.RedisProvider{},
-	)
+	), nil
 }
 
 func getBufDialer(listener *bufconn.Listener) func(context.Context, string) (net.Conn, error) {
@@ -68,9 +60,16 @@ func getBufDialer(listener *bufconn.Listener) func(context.Context, string) (net
 
 func startGRPCServer() (*grpc.Server, *bufconn.Listener) {
 
-	bufferSize := 1024 * 1024
-	listener := bufconn.Listen(bufferSize)
-	server := grpc.NewServer()
+	var (
+		bufferSize = 1024 * 1024
+		listener   = bufconn.Listen(bufferSize)
+		server     = grpc.NewServer()
+	)
+
+	mockConext, err := newContext()
+	if err != nil {
+		log.Fatalf("could not create a new context: %v", err)
+	}
 
 	proto.RegisterAuthServiceServer(server, auth.NewService(mockConext))
 	proto.RegisterUserServiceServer(server, user.NewService(mockConext))
