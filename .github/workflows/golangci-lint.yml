@@ -23,5 +23,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Install linter
+      run: make install-metalinter
     - name: Lint
-      run: make lint
+      run: make ci-lint
