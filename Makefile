@@ -46,8 +46,8 @@ lint:
 
 # for ci jobs, runs lint against the changed packages in the commit
 ci-lint:
-	$(shell which golangci-lint) $(LINTERCMD) --deadline 10m \
-		--new-from-rev=HEAD~ ./...
+	$(GO) get ./...
+	$(LINTER) $(LINTERCMD) --deadline 10m --new-from-rev=HEAD~ ./...
 
 # Check if golangci-lint not exists, then install it
 install-metalinter:
