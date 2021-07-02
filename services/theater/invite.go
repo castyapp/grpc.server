@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
+	"github.com/castyapp/grpc.server/services/auth"
 	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/libcasty-protocol-go/protocol"
-	"github.com/castyapp/grpc.server/models"
-	"github.com/castyapp/grpc.server/helpers"
-	"github.com/castyapp/grpc.server/services/auth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,14 +55,14 @@ func (s *Service) Invite(ctx context.Context, req *proto.InviteFriendsTheaterReq
 
 	fids := make([]primitive.ObjectID, 0)
 	for _, friendID := range req.FriendIds {
-		if theater.UserId.Hex() == friendID {
+		if theater.UserID.Hex() == friendID {
 			continue
 		}
-		friendObjectId, err := primitive.ObjectIDFromHex(friendID)
+		friendObjectID, err := primitive.ObjectIDFromHex(friendID)
 		if err != nil {
 			continue
 		}
-		fids = append(fids, friendObjectId)
+		fids = append(fids, friendObjectID)
 	}
 
 	if len(fids) == 0 {

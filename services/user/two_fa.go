@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/services"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"

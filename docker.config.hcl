@@ -1,0 +1,100 @@
+# Debug mode
+debug = false
+
+# Application environment
+env = "dev"
+
+# Timezone
+timezone = "Asia/Tehran"
+
+# Redis configurations
+redis {
+  # if you wish to use redis cluster, set this value to true
+  # If cluster is true, sentinels is required
+  # If cluster is false, addr is required
+  cluster       = false
+  master_name   = "casty"
+  addr          = "127.0.0.1:6379"
+  pass          = ""
+  sentinel_pass = ""
+}
+
+# Database (mongodb) config
+db {
+  name        = "casty"
+  host        = "127.0.0.1"
+  port        = 27017
+  user        = "root"
+  pass        = "super-secure-password"
+  auth_source = ""
+}
+
+# JWT secrets
+jwt {
+  access_token {
+    # make sure to use a strong secret key
+    secret = "random-secret"
+    # If you wish to change valid duration of a access_token, change this value
+    expires_at {
+      type  = "days" # can be [seconds|minutes|hours|days|weeks]
+      value = 1
+    }
+  }
+  refresh_token {
+    # make sure to use a strong secret key
+    secret = "random-secret"
+    # If you wish to change valid duration of a refresh_token, change this value
+    expires_at {
+      type  = "weeks" # can be [seconds|minutes|hours|days|weeks]
+      value = 1
+    }
+  }
+}
+
+# oauth details
+oauth {
+
+  # Let user to register with oauth
+  registration_by_oauth = true
+
+  # Google config
+  google {
+    enabled       = false
+    client_id     = ""
+    client_secret = ""
+    auth_uri      = "https://accounts.google.com/o/oauth2/auth"
+    token_uri     = "https://oauth2.googleapis.com/token"
+    redirect_uri = "https://casty.ir/oauth/google/callback"
+  }
+ 
+  # Spotify config
+  spotify {
+    enabled       = false
+    client_id     = ""
+    client_secret = ""
+    auth_uri      = "https://accounts.spotify.com/authorize"
+    token_uri     = "https://accounts.spotify.com/api/token"
+    redirect_uri  = "https://casty.ir/oauth/spotify/callback"
+  }
+
+}
+
+# S3 bucket config
+s3 {
+  endpoint = "127.0.0.1:9000"
+  access_key = "secret-access-key"
+  secret_key = "secret-key"
+}
+
+# Sentry config
+sentry {
+  enabled = false
+  dsn     = "sentry.dsn.here"
+}
+
+# Recaptcha config, it can be google or hcaptcha
+recaptcha {
+  enabled = false
+  type    = "hcaptcha"
+  secret  = "hcaptcha-secret-token"
+}

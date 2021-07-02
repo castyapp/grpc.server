@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -117,7 +117,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRe
 			return nil, status.Error(codes.PermissionDenied, "Permission Denied!")
 		}
 	} else {
-		if dbTheater.UserId.Hex() != authUser.ID.Hex() {
+		if dbTheater.UserID.Hex() != authUser.ID.Hex() {
 			switch dbTheater.Privacy {
 			case proto.PRIVACY_PRIVATE:
 				return nil, status.Error(codes.PermissionDenied, "Permission Denied!")
@@ -125,7 +125,7 @@ func (s *Service) GetSubtitles(ctx context.Context, req *proto.MediaSourceAuthRe
 		}
 	}
 
-	if err := mediaSourcesCollection.FindOne(ctx, bson.M{"_id": dbTheater.MediaSourceId}).Decode(mediaSource); err != nil {
+	if err := mediaSourcesCollection.FindOne(ctx, bson.M{"_id": dbTheater.MediaSourceID}).Decode(mediaSource); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find media source!")
 	}
 

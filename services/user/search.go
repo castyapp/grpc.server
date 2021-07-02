@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
@@ -40,17 +40,21 @@ func (s *Service) Search(ctx context.Context, req *proto.SearchUserRequest) (*pr
 		return nil, status.Error(codes.InvalidArgument, "keyword is required")
 	}
 
-	collection.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys: bson.M{
-			"fullname": "text",
-			"username": "text",
-		},
-	})
-
 	filter := bson.M{
 		"_id": bson.M{"$ne": user.ID},
-		"$text": bson.M{
-			"$search": req.Keyword,
+		"$or": []interface{}{
+			bson.M{
+				"username": bson.M{
+					"$regex":   req.Keyword,
+					"$options": "i",
+				},
+			},
+			bson.M{
+				"fullname": bson.M{
+					"$regex":   req.Keyword,
+					"$options": "i",
+				},
+			},
 		},
 	}
 

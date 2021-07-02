@@ -3,37 +3,38 @@ package spotify
 import (
 	"encoding/json"
 	"errors"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
+
+	"golang.org/x/oauth2"
 )
 
 type ExplicitContent struct {
-	FilterEnabled  bool  `json:"filter_enabled"`
-	FilterLocked   bool  `json:"filter_locked"`
+	FilterEnabled bool `json:"filter_enabled"`
+	FilterLocked  bool `json:"filter_locked"`
 }
 
 type User struct {
-	Id              string            `json:"id"`
-	DisplayName     string            `json:"display_name"`
-	Email           string            `json:"email"`
-	Country         string            `json:"country"`
-	Href            string            `json:"href"`
-	Images          []string          `json:"images"`
-	Product         string            `json:"product"`
-	Type            string            `json:"type"`
-	Uri             string            `json:"uri"`
-	ExternalUrls struct{
+	ID           string   `json:"id"`
+	DisplayName  string   `json:"display_name"`
+	Email        string   `json:"email"`
+	Country      string   `json:"country"`
+	Href         string   `json:"href"`
+	Images       []string `json:"images"`
+	Product      string   `json:"product"`
+	Type         string   `json:"type"`
+	URI          string   `json:"uri"`
+	ExternalUrls struct {
 		Spotify string `json:"spotify"`
 	} `json:"external_urls"`
-	Followers struct{
-		Href   string  `json:"href"`
-		Total  int     `json:"total"`
+	Followers struct {
+		Href  string `json:"href"`
+		Total int    `json:"total"`
 	}
 }
 
-func (u *User) GetUserId() string {
-	return u.Id
+func (u *User) GetUserID() string {
+	return u.ID
 }
 
 func (u *User) GetAvatar() string {
@@ -55,7 +56,7 @@ func GetUserByToken(token *oauth2.Token) (*User, error) {
 		return nil, err
 	}
 
-	request.Header.Add("Authorization", "Bearer " + token.AccessToken)
+	request.Header.Add("Authorization", "Bearer "+token.AccessToken)
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {

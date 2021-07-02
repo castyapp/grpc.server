@@ -3,27 +3,23 @@ package helpers
 import (
 	"context"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/models"
-	"github.com/golang/protobuf/ptypes"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func NewProtoMessage(db *mongo.Database, ctx context.Context, message *models.Message) (*proto.Message, error) {
+func NewProtoMessage(ctx context.Context, db *mongo.Database, message *models.Message) (*proto.Message, error) {
 
 	var (
-		err        error
 		sender     = new(models.User)
 		collection = db.Collection("users")
 	)
 
-	if err := collection.FindOne(ctx, bson.M{"_id": message.SenderId}).Decode(sender); err != nil {
+	if err := collection.FindOne(ctx, bson.M{"_id": message.SenderID}).Decode(sender); err != nil {
 		return nil, err
 	}
-
-	createdAt, _ := ptypes.TimestampProto(message.CreatedAt)
-	updatedAt, _ := ptypes.TimestampProto(message.UpdatedAt)
 
 	protoMessage := &proto.Message{
 		Id:        message.ID.Hex(),
@@ -31,15 +27,12 @@ func NewProtoMessage(db *mongo.Database, ctx context.Context, message *models.Me
 		Sender:    sender.ToProto(),
 		Edited:    message.Edited,
 		Deleted:   message.Deleted,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		CreatedAt: timestamppb.New(message.CreatedAt),
+		UpdatedAt: timestamppb.New(message.UpdatedAt),
 	}
 
 	if message.DeletedAt.Unix() != 0 {
-		protoMessage.DeletedAt, err = ptypes.TimestampProto(message.DeletedAt)
-		if err != nil {
-			return nil, err
-		}
+		protoMessage.DeletedAt = timestamppb.New(message.DeletedAt)
 	}
 
 	return protoMessage, nil

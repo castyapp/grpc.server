@@ -20,7 +20,7 @@ func (p *DatabaseProvider) Register(ctx *core.Context) error {
 	mCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	cm := ctx.MustGet("config.map").(*config.ConfigMap)
+	cm := ctx.MustGet("config.map").(*config.Map)
 
 	opts := options.Client()
 	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", cm.DB.Host, cm.DB.Port))

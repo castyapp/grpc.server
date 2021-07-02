@@ -1,17 +1,15 @@
 package helpers
 
 import (
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/models"
-	"github.com/golang/protobuf/ptypes"
+	"github.com/castyapp/libcasty-protocol-go/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func NewProtoFriend(friend *models.Friend) (*proto.Friend, error) {
-	createdAt,  _ := ptypes.TimestampProto(friend.CreatedAt)
-	updatedAt, _ := ptypes.TimestampProto(friend.UpdatedAt)
+func NewProtoFriend(f *models.Friend) (*proto.Friend, error) {
 	return &proto.Friend{
-		Accepted:  friend.Accepted,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		Accepted:  f.Accepted,
+		CreatedAt: timestamppb.New(f.CreatedAt),
+		UpdatedAt: timestamppb.New(f.UpdatedAt),
 	}, nil
 }

@@ -3,6 +3,7 @@ package google
 import (
 	"context"
 	"encoding/json"
+
 	"golang.org/x/oauth2"
 )
 
@@ -16,7 +17,7 @@ type User struct {
 	Locale        string `json:"locale"`
 }
 
-func (u *User) GetUserId() string {
+func (u *User) GetUserID() string {
 	return u.ID
 }
 

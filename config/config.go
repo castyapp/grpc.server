@@ -9,20 +9,20 @@ import (
 	"github.com/hashicorp/hcl"
 )
 
-type ConfigMap struct {
-	Debug     bool            `hcl:"debug"`
-	Env       string          `hcl:"env"`
-	Timezone  string          `hcl:"timezone"`
-	Redis     RedisConfig     `hcl:"redis,block"`
-	DB        DBConfig        `hcl:"db,block"`
-	Oauth     OauthConfig     `hcl:"oauth,block"`
-	S3        S3Config        `hcl:"s3,block"`
-	Sentry    SentryConfig    `hcl:"sentry,block"`
-	JWT       JWTConfig       `hcl:"jwt,block"`
-	Recaptcha RecaptchaConfig `hcl:"recaptcha,block"`
+type Map struct {
+	Debug     bool         `hcl:"debug"`
+	Env       string       `hcl:"env"`
+	Timezone  string       `hcl:"timezone"`
+	Redis     RedisMap     `hcl:"redis,block"`
+	DB        DBMap        `hcl:"db,block"`
+	Oauth     OauthMap     `hcl:"oauth,block"`
+	S3        S3Map        `hcl:"s3,block"`
+	Sentry    SentryMap    `hcl:"sentry,block"`
+	JWT       JWTMap       `hcl:"jwt,block"`
+	Recaptcha RecaptchaMap `hcl:"recaptcha,block"`
 }
 
-type RedisConfig struct {
+type RedisMap struct {
 	Cluster      bool     `hcl:"cluster"`
 	MasterName   string   `hcl:"master_name"`
 	Addr         string   `hcl:"addr"`
@@ -31,7 +31,7 @@ type RedisConfig struct {
 	SentinelPass string   `hcl:"sentinel_pass"`
 }
 
-type DBConfig struct {
+type DBMap struct {
 	Name       string `hcl:"name"`
 	Host       string `hcl:"host"`
 	Port       int    `hcl:"port"`
@@ -44,24 +44,24 @@ type OauthClient struct {
 	Enabled      bool   `hcl:"enabled"`
 	ClientID     string `hcl:"client_id"`
 	ClientSecret string `hcl:"client_secret"`
-	AuthUri      string `hcl:"auth_uri"`
-	TokenUri     string `hcl:"token_uri"`
-	RedirectUri  string `hcl:"redirect_uri"`
+	AuthURI      string `hcl:"auth_uri"`
+	TokenURI     string `hcl:"token_uri"`
+	RedirectURI  string `hcl:"redirect_uri"`
 }
 
-type OauthConfig struct {
+type OauthMap struct {
 	RegistrationByOauth bool        `hcl:"registration_by_oauth"`
 	Google              OauthClient `hcl:"google,block"`
 	Spotify             OauthClient `hcl:"spotify,block"`
 }
 
-type S3Config struct {
+type S3Map struct {
 	Endpoint  string `hcl:"endpoint"`
 	AccessKey string `hcl:"access_key"`
 	SecretKey string `hcl:"secret_key"`
 }
 
-type SentryConfig struct {
+type SentryMap struct {
 	Enabled bool   `hcl:"enabled"`
 	Dsn     string `hcl:"dsn"`
 }
@@ -97,18 +97,18 @@ func (t JWTToken) GetExpireDuration() time.Duration {
 	return 0
 }
 
-type JWTConfig struct {
+type JWTMap struct {
 	AccessToken  JWTToken `hcl:"access_token,block"`
 	RefreshToken JWTToken `hcl:"refresh_token,block"`
 }
 
-type RecaptchaConfig struct {
+type RecaptchaMap struct {
 	Enabled bool   `hcl:"enabled"`
 	Type    string `hcl:"type"`
 	Secret  string `hcl:"secret"`
 }
 
-func LoadFile(filename string) (c *ConfigMap, err error) {
+func LoadFile(filename string) (c *Map, err error) {
 
 	d, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -134,6 +134,5 @@ func Provider(ctx *core.Context) error {
 	if err != nil {
 		return fmt.Errorf("could not load config: %v", err)
 	}
-	ctx.Set("config.map", configMap)
-	return nil
+	return ctx.Set("config.map", configMap)
 }

@@ -12,22 +12,19 @@ const (
 	userEndpoint = "https://api.spotify.com/v1/me"
 )
 
-type JsonConfig struct {
+type JSONConfig struct {
 	Web struct {
-		ClientId     string `json:"client_id"`
+		ClientID     string `json:"client_id"`
 		ClientSecret string `json:"client_secret"`
-		RedirectUri  string `json:"redirect_uri"`
-		AuthUri      string `json:"auth_uri"`
-		TokenUri     string `json:"token_uri"`
+		RedirectURI  string `json:"redirect_uri"`
+		AuthURI      string `json:"auth_uri"`
+		TokenURI     string `json:"token_uri"`
 	} `json:"web"`
 }
 
 var (
-	err           error
-	jsonConfig    []byte
-	jsonConfigMap = new(JsonConfig)
-	oauthClient   *oauth2.Config
-	scopes        = []string{
+	oauthClient *oauth2.Config
+	scopes      = []string{
 		"user-read-private",
 		"user-read-email",
 		"user-read-playback-state",
@@ -39,15 +36,15 @@ var (
 	}
 )
 
-func Configure(c *config.ConfigMap) error {
+func Configure(c *config.Map) error {
 	oauthClient = &oauth2.Config{
 		ClientID:     c.Oauth.Spotify.ClientID,
 		ClientSecret: c.Oauth.Spotify.ClientSecret,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  c.Oauth.Spotify.AuthUri,
-			TokenURL: c.Oauth.Spotify.TokenUri,
+			AuthURL:  c.Oauth.Spotify.AuthURI,
+			TokenURL: c.Oauth.Spotify.TokenURI,
 		},
-		RedirectURL: c.Oauth.Spotify.RedirectUri,
+		RedirectURL: c.Oauth.Spotify.RedirectURI,
 		Scopes:      scopes,
 	}
 	return nil

@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/oauth/spotify"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/config"
 	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/jwt"
@@ -15,6 +14,7 @@ import (
 	"github.com/castyapp/grpc.server/services/message"
 	"github.com/castyapp/grpc.server/services/theater"
 	"github.com/castyapp/grpc.server/services/user"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -47,7 +47,7 @@ func newContext() *core.Context {
 		// configure jwt
 		&providers.LambdaProvider{
 			Registeration: func(ctx *core.Context) error {
-				cm := ctx.MustGet("config.map").(*config.ConfigMap)
+				cm := ctx.MustGet("config.map").(*config.Map)
 				if err := jwt.Load(cm); err != nil {
 					return fmt.Errorf("could not load jwt configuration: %v", err)
 				}

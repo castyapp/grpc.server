@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -45,11 +45,11 @@ func (s *Service) GetFollowedTheaters(ctx context.Context, req *proto.Authentica
 			continue
 		}
 		theater := new(models.Theater)
-		err := db.Collection("theaters").FindOne(ctx, bson.M{"_id": follow.TheaterId}).Decode(theater)
+		err := db.Collection("theaters").FindOne(ctx, bson.M{"_id": follow.TheaterID}).Decode(theater)
 		if err != nil {
 			continue
 		}
-		protoTheater, err := helpers.NewTheaterProto(db, ctx, theater)
+		protoTheater, err := helpers.NewTheaterProto(ctx, db, theater)
 		if err != nil {
 			continue
 		}

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/jwt"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/getsentry/sentry-go"
 	"github.com/golang/protobuf/ptypes/any"
 	"go.mongodb.org/mongo-driver/bson"

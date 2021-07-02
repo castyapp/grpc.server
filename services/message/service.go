@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
-	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/helpers"
+	"github.com/castyapp/grpc.server/models"
 	"github.com/castyapp/grpc.server/services/auth"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
@@ -29,7 +29,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 
 	var (
 		db              = s.MustGet("db.mongo").(*mongo.Database)
-		reciever        = new(models.User)
+		receiver        = new(models.User)
 		collection      = db.Collection("messages")
 		usersCollection = db.Collection("users")
 		failedResponse  = status.Error(codes.Internal, "Could not get messages, Please try again later!")
@@ -44,7 +44,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		return nil, errors.New("receiver can not be you")
 	}
 
-	if err := usersCollection.FindOne(ctx, bson.M{"username": req.ReceiverId}).Decode(reciever); err != nil {
+	if err := usersCollection.FindOne(ctx, bson.M{"username": req.ReceiverId}).Decode(receiver); err != nil {
 		return nil, status.Error(codes.NotFound, "Could not find receiver!")
 	}
 
@@ -52,11 +52,11 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		"$or": []interface{}{
 			bson.M{
 				"sender_id":   u.ID,
-				"receiver_id": reciever.ID,
+				"receiver_id": receiver.ID,
 			},
 			bson.M{
 				"receiver_id": u.ID,
-				"sender_id":   reciever.ID,
+				"sender_id":   receiver.ID,
 			},
 		},
 	}
@@ -72,7 +72,7 @@ func (s *Service) GetUserMessages(ctx context.Context, req *proto.GetMessagesReq
 		if err := cursor.Decode(message); err != nil {
 			continue
 		}
-		protoMessage, err := helpers.NewProtoMessage(db, ctx, message)
+		protoMessage, err := helpers.NewProtoMessage(ctx, db, message)
 		if err != nil {
 			continue
 		}

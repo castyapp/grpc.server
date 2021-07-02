@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/core"
 	"github.com/castyapp/grpc.server/models"
+	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/go-redis/redis/v8"
-	"github.com/golang/protobuf/ptypes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func GetFriendsFromDatabase(ctx *core.Context, user *models.User) ([]*proto.User, error) {
@@ -45,9 +45,9 @@ func GetFriendsFromDatabase(ctx *core.Context, user *models.User) ([]*proto.User
 			continue
 		}
 
-		var filter = bson.M{"_id": friend.FriendId}
-		if user.ID.Hex() == friend.FriendId.Hex() {
-			filter = bson.M{"_id": friend.UserId}
+		var filter = bson.M{"_id": friend.FriendID}
+		if user.ID.Hex() == friend.FriendID.Hex() {
+			filter = bson.M{"_id": friend.UserID}
 		}
 
 		friendUserObject := new(models.User)
@@ -101,25 +101,22 @@ func SendEventToTheaterMembers(ctx *core.Context, event []byte, theater *models.
 	return
 }
 
-func NewProtoUser(user *models.User) *proto.User {
-	lastLogin, _ := ptypes.TimestampProto(user.LastLogin)
-	joinedAt, _ := ptypes.TimestampProto(user.JoinedAt)
-	updatedAt, _ := ptypes.TimestampProto(user.UpdatedAt)
+func NewProtoUser(u *models.User) *proto.User {
 	return &proto.User{
-		Id:            user.ID.Hex(),
-		Fullname:      user.Fullname,
-		Username:      user.Username,
-		Hash:          user.Hash,
-		Email:         user.Email,
-		IsActive:      user.IsActive,
-		IsStaff:       user.IsStaff,
-		Verified:      user.Verified,
-		EmailVerified: user.EmailVerified,
-		Avatar:        user.Avatar,
-		TwoFaEnabled:  user.TwoFactorAuthEnabled,
-		LastLogin:     lastLogin,
-		JoinedAt:      joinedAt,
-		UpdatedAt:     updatedAt,
+		Id:            u.ID.Hex(),
+		Fullname:      u.Fullname,
+		Username:      u.Username,
+		Hash:          u.Hash,
+		Email:         u.Email,
+		IsActive:      u.IsActive,
+		IsStaff:       u.IsStaff,
+		Verified:      u.Verified,
+		EmailVerified: u.EmailVerified,
+		Avatar:        u.Avatar,
+		TwoFaEnabled:  u.TwoFactorAuthEnabled,
+		LastLogin:     timestamppb.New(u.LastLogin),
+		JoinedAt:      timestamppb.New(u.JoinedAt),
+		UpdatedAt:     timestamppb.New(u.UpdatedAt),
 	}
 }
 

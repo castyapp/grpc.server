@@ -1,24 +1,20 @@
 package helpers
 
 import (
-	"github.com/castyapp/libcasty-protocol-go/proto"
 	"github.com/castyapp/grpc.server/models"
-	"github.com/golang/protobuf/ptypes"
+	"github.com/castyapp/libcasty-protocol-go/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func NewProtoConnection(conn *models.Connection) *proto.Connection {
-
-	createdAt, _ := ptypes.TimestampProto(conn.CreatedAt)
-	updatedAt, _ := ptypes.TimestampProto(conn.UpdatedAt)
-
+func NewProtoConnection(c *models.Connection) *proto.Connection {
 	return &proto.Connection{
-		Id:             conn.ID.Hex(),
-		ServiceUserId:  conn.ServiceUserId,
-		Name:           conn.Name,
-		Type:           conn.Type,
-		AccessToken:    conn.AccessToken,
-		ShowActivity:   conn.ShowActivity,
-		CreatedAt:      createdAt,
-		UpdatedAt:      updatedAt,
+		Id:            c.ID.Hex(),
+		ServiceUserId: c.ServiceUserID,
+		Name:          c.Name,
+		Type:          c.Type,
+		AccessToken:   c.AccessToken,
+		ShowActivity:  c.ShowActivity,
+		CreatedAt:     timestamppb.New(c.CreatedAt),
+		UpdatedAt:     timestamppb.New(c.UpdatedAt),
 	}
 }

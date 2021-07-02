@@ -12,7 +12,7 @@ import (
 type SentryProvider struct{}
 
 func (p *SentryProvider) Register(ctx *core.Context) error {
-	cm := ctx.MustGet("config.map").(*config.ConfigMap)
+	cm := ctx.MustGet("config.map").(*config.Map)
 	if cm.Sentry.Enabled {
 		if err := sentry.Init(sentry.ClientOptions{Dsn: cm.Sentry.Dsn}); err != nil {
 			return fmt.Errorf("could not initilize sentry: %v", err)
